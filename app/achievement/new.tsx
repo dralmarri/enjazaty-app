@@ -33,6 +33,7 @@ import {
   createAttachment,
   createNotification,
   listFolders,
+  listMembers,
 } from '@/lib/api';
 import { uploadFile } from '@/lib/storage';
 import type { AttachmentType, Folder } from '@/types/database';
@@ -182,16 +183,19 @@ export default function NewAchievementScreen() {
         });
       }
 
-      // 3) Notify the manager (if any) about the new submission.
-      if (profile.manager_id) {
-        await createNotification({
-          user_id: profile.manager_id,
-          title: t('addAchievement'),
-          body: `${profile.full_name}: ${title.trim()}`,
-          type: 'achievement',
-          related_id: achievement.id,
-        });
-      }
+      // 3) Notify every supervisor (member) about the new submission.
+      const members = await listMembers(profile.id);
+      await Promise.all(
+        members.map((m) =>
+          createNotification({
+            user_id: m.id,
+            title: t('addAchievement'),
+            body: `${profile.full_name}: ${title.trim()}`,
+            type: 'achievement',
+            related_id: achievement.id,
+          })
+        )
+      );
 
       router.replace(`/achievement/${achievement.id}`);
     } catch (e: any) {

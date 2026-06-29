@@ -36,6 +36,7 @@ export default function RootLayout() {
               <Stack.Screen name="folder" />
               <Stack.Screen name="evaluate" />
               <Stack.Screen name="edit-profile" />
+              <Stack.Screen name="notifications" />
               <Stack.Screen name="privacy" />
             </Stack>
           </AuthProvider>

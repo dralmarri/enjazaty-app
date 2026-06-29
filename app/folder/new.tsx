@@ -4,7 +4,7 @@
  */
 import React, { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Button, Header, Input, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -14,6 +14,8 @@ import { colors, spacing } from '@/theme/colors';
 export default function NewFolderScreen() {
   const { profile } = useAuth();
   const { t } = useLanguage();
+  // ?parent = create this folder INSIDE another folder (a sub-folder).
+  const { parent } = useLocalSearchParams<{ parent?: string }>();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -31,6 +33,7 @@ export default function NewFolderScreen() {
         name: name.trim(),
         description: description.trim() || null,
         owner_id: profile.id,
+        parent_id: parent ?? null,
       });
       router.back();
     } catch (e: any) {

@@ -19,7 +19,7 @@ import {
   SectionTitle,
 } from '@/components';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfile, listAchievements, listFolders } from '@/lib/api';
+import { getProfile, listAchievements, listRootFolders } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, Folder, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
@@ -39,7 +39,7 @@ export default function EmployeeProfileScreen() {
       const [emp, achs, fdrs] = await Promise.all([
         getProfile(id),
         listAchievements(id),
-        listFolders(id),
+        listRootFolders(id),
       ]);
       setEmployee(emp);
       setAchievements(achs);

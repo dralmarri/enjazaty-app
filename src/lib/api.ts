@@ -137,6 +137,29 @@ export async function listFolders(ownerId: string): Promise<Folder[]> {
   return (data ?? []) as Folder[];
 }
 
+/** Top-level folders only (no parent). Used on home / employee profile. */
+export async function listRootFolders(ownerId: string): Promise<Folder[]> {
+  const { data, error } = await supabase
+    .from('folders')
+    .select('*')
+    .eq('owner_id', ownerId)
+    .is('parent_id', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Folder[];
+}
+
+/** Sub-folders nested directly inside the given parent folder. */
+export async function listChildFolders(parentId: string): Promise<Folder[]> {
+  const { data, error } = await supabase
+    .from('folders')
+    .select('*')
+    .eq('parent_id', parentId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Folder[];
+}
+
 export async function getFolder(id: string): Promise<Folder | null> {
   const { data, error } = await supabase
     .from('folders')

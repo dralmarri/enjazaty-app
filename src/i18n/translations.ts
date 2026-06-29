@@ -211,6 +211,9 @@ export const translations = {
     noFolder: 'بدون مجلد',
     moved: 'تم النقل',
     employeeFolders: 'مجلدات الموظف',
+    subFolders: 'المجلدات الفرعية',
+    addSubFolder: 'إضافة مجلد فرعي',
+    addItem: 'إضافة',
   },
 
   en: {
@@ -398,6 +401,9 @@ export const translations = {
     noFolder: 'No folder',
     moved: 'Moved',
     employeeFolders: 'Employee folders',
+    subFolders: 'Sub-folders',
+    addSubFolder: 'Add sub-folder',
+    addItem: 'Add',
   },
 } as const;
 

@@ -18,7 +18,7 @@ import {
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { listAchievements, listFolders } from '@/lib/api';
+import { listAchievements, listNotifications, listRootFolders } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
@@ -28,6 +28,7 @@ export default function WorkspaceScreen() {
   const { t, language, isRTL } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
 
@@ -35,12 +36,14 @@ export default function WorkspaceScreen() {
     if (!profile) return;
     try {
       setRefreshing(true);
-      const [achs, fdrs] = await Promise.all([
+      const [achs, fdrs, notifs] = await Promise.all([
         listAchievements(profile.id),
-        listFolders(profile.id),
+        listRootFolders(profile.id),
+        listNotifications(profile.id),
       ]);
       setAchievements(achs);
       setFolders(fdrs);
+      setUnread(notifs.filter((n) => !n.read).length);
     } catch {
       // keep previous data on error
     } finally {
@@ -92,6 +95,19 @@ export default function WorkspaceScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={load}>
+      {/* Top bar with notification bell */}
+      <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Text style={styles.appName}>{t('appName')}</Text>
+        <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.bell}>
+          <Ionicons name="notifications-outline" size={24} color={colors.textDark} />
+          {unread > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unread > 9 ? '9+' : unread}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+      </View>
+
       {/* Greeting */}
       <View style={[styles.greetRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
         <View style={{ flex: 1 }}>
@@ -223,6 +239,26 @@ export default function WorkspaceScreen() {
 }
 
 const styles = StyleSheet.create({
+  topBar: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  appName: { fontSize: 18, fontWeight: '900', color: colors.primaryDark },
+  bell: { padding: spacing.xs },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: { color: colors.white, fontSize: 10, fontWeight: '800' },
   greetRow: { alignItems: 'center', gap: spacing.md, marginBottom: spacing.xl },
   greetHi: { fontSize: 14, color: colors.mutedText },
   greetName: { fontSize: 24, fontWeight: '900', color: colors.textDark, marginTop: 2 },
