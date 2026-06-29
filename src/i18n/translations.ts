@@ -218,6 +218,9 @@ export const translations = {
     fromCamera: 'التقاط صورة بالكاميرا',
     fromFiles: 'من الملفات',
     developedBy: 'تطوير: هنادي المري',
+    moveTo: 'نقل إلى',
+    deleteFolderConfirm: 'حذف هذا المجلد؟',
+    longPressHint: 'اضغط مطولاً على المجلد للتعديل',
   },
 
   en: {
@@ -412,6 +415,9 @@ export const translations = {
     fromCamera: 'Take a photo',
     fromFiles: 'From files',
     developedBy: 'Developed by Hanadi Almarri',
+    moveTo: 'Move to',
+    deleteFolderConfirm: 'Delete this folder?',
+    longPressHint: 'Long-press a folder to edit',
   },
 } as const;
 

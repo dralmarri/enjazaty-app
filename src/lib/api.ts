@@ -192,6 +192,18 @@ export async function deleteFolder(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Move a folder under another folder (parentId) or to the root (null). */
+export async function updateFolderParent(
+  id: string,
+  parentId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('folders')
+    .update({ parent_id: parentId })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 /* ------------------------------ Achievements ----------------------------- */
 
 export async function listAchievements(ownerId: string): Promise<Achievement[]> {

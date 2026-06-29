@@ -3,7 +3,7 @@
  * RTL-first: Arabic is preselected.
  */
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Button, Screen } from '@/components';
@@ -29,9 +29,7 @@ export default function LanguageScreen() {
   return (
     <Screen padded>
       <View style={styles.hero}>
-        <View style={styles.logoCircle}>
-          <Ionicons name="ribbon" size={44} color={colors.onPrimary} />
-        </View>
+        <Image source={require('../assets/icon.png')} style={styles.logo} />
         <Text style={styles.appName}>{t('appName')}</Text>
         <Text style={styles.tagline}>{t('tagline')}</Text>
       </View>
@@ -72,13 +70,10 @@ export default function LanguageScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginTop: spacing.xxl, marginBottom: spacing.xxl },
-  logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 110,
+    height: 110,
+    borderRadius: 26,
     marginBottom: spacing.lg,
   },
   appName: { fontSize: 30, fontWeight: '900', color: colors.textDark },

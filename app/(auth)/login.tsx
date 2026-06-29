@@ -2,8 +2,7 @@
  * Screen 2 — Login with email + password.
  */
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Button, Input, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
@@ -38,9 +37,7 @@ export default function LoginScreen() {
   return (
     <Screen>
       <View style={styles.hero}>
-        <View style={styles.logoCircle}>
-          <Ionicons name="ribbon" size={36} color={colors.onPrimary} />
-        </View>
+        <Image source={require('../../assets/icon.png')} style={styles.logo} />
         <Text style={styles.title}>{t('login')}</Text>
         <Text style={styles.subtitle}>{t('appName')}</Text>
       </View>
@@ -85,13 +82,10 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginTop: spacing.xxl, marginBottom: spacing.xl },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 92,
+    height: 92,
+    borderRadius: 22,
     marginBottom: spacing.md,
   },
   title: { fontSize: 26, fontWeight: '900', color: colors.textDark },

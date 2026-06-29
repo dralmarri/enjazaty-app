@@ -18,7 +18,13 @@ import {
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { listAchievements, listNotifications, listRootFolders } from '@/lib/api';
+import {
+  deleteFolder,
+  listAchievements,
+  listNotifications,
+  listRootFolders,
+  updateFolderParent,
+} from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
@@ -32,6 +38,29 @@ export default function WorkspaceScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
   const [fileMenu, setFileMenu] = useState(false);
+  // Long-press folder editing.
+  const [folderMenu, setFolderMenu] = useState<Folder | null>(null);
+  const [moveMenu, setMoveMenu] = useState<Folder | null>(null);
+
+  const onDeleteFolder = useCallback(
+    async (folderId: string) => {
+      try {
+        await deleteFolder(folderId);
+        await load();
+      } catch {
+        // ignore
+      }
+    },
+    [] // load is stable enough; folders refresh via focus
+  );
+
+  const onMoveFolder = useCallback(async (folderId: string, parentId: string | null) => {
+    try {
+      await updateFolderParent(folderId, parentId);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -191,6 +220,8 @@ export default function WorkspaceScreen() {
                 key={f.id}
                 style={styles.folderCard}
                 onPress={() => router.push(`/folder/${f.id}`)}
+                onLongPress={() => setFolderMenu(f)}
+                delayLongPress={350}
               >
                 <Ionicons name="folder" size={28} color={colors.primary} />
                 <Text style={styles.folderName} numberOfLines={1}>
@@ -199,6 +230,7 @@ export default function WorkspaceScreen() {
               </Pressable>
             ))}
           </View>
+          <Text style={styles.hint}>{t('longPressHint')}</Text>
         </>
       ) : null}
 
@@ -250,6 +282,99 @@ export default function WorkspaceScreen() {
                 <Text style={styles.menuLabel}>{opt.label}</Text>
               </Pressable>
             ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Folder long-press actions: move / delete */}
+      <Modal
+        visible={!!folderMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFolderMenu(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setFolderMenu(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{folderMenu?.name}</Text>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = folderMenu;
+                setFolderMenu(null);
+                setMoveMenu(f);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="swap-horizontal-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('moveTo')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = folderMenu;
+                setFolderMenu(null);
+                if (f) onDeleteFolder(f.id);
+              }}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: '#FEE2E2' }]}>
+                <Ionicons name="trash-outline" size={22} color={colors.danger} />
+              </View>
+              <Text style={[styles.menuLabel, { color: colors.danger }]}>{t('delete')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Move folder: pick a destination (workspace root or another folder) */}
+      <Modal
+        visible={!!moveMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMoveMenu(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setMoveMenu(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{t('moveTo')}</Text>
+            {/* Move to workspace root */}
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={async () => {
+                const f = moveMenu;
+                setMoveMenu(null);
+                if (f) {
+                  await onMoveFolder(f.id, null);
+                  await load();
+                }
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="home-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('placeInWorkspace')}</Text>
+            </Pressable>
+            {/* Move into another folder */}
+            {folders
+              .filter((f) => f.id !== moveMenu?.id)
+              .map((f) => (
+                <Pressable
+                  key={f.id}
+                  style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  onPress={async () => {
+                    const src = moveMenu;
+                    setMoveMenu(null);
+                    if (src) {
+                      await onMoveFolder(src.id, f.id);
+                      await load();
+                    }
+                  }}
+                >
+                  <View style={styles.menuIcon}>
+                    <Ionicons name="folder-outline" size={22} color={colors.primaryDark} />
+                  </View>
+                  <Text style={styles.menuLabel}>{f.name}</Text>
+                </Pressable>
+              ))}
           </Pressable>
         </Pressable>
       </Modal>
@@ -371,6 +496,7 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   folderName: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.textDark },
+  hint: { fontSize: 11, color: colors.mutedText, marginTop: spacing.xs, textAlign: 'center' },
   achievementCard: { marginBottom: spacing.md },
   achRow: { alignItems: 'center', gap: spacing.md },
   achTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },

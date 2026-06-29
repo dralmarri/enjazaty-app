@@ -10,10 +10,13 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
+  Avatar,
   Badge,
+  Button,
   Card,
   EmptyState,
   Header,
+  Input,
   Loading,
   Screen,
   SectionTitle,
@@ -21,12 +24,14 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
+  addSupervision,
   getFolder,
+  getProfileByCode,
   listAchievementsByFolder,
   listChildFolders,
 } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Folder } from '@/types/database';
+import type { Achievement, Folder, UserProfile } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 export default function FolderContentsScreen() {
@@ -39,6 +44,13 @@ export default function FolderContentsScreen() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [addMenu, setAddMenu] = useState(false);
+
+  // Add-employee-to-this-folder modal state.
+  const [empModal, setEmpModal] = useState(false);
+  const [empCode, setEmpCode] = useState('');
+  const [empFound, setEmpFound] = useState<UserProfile | null>(null);
+  const [empBusy, setEmpBusy] = useState(false);
+  const [empError, setEmpError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -62,6 +74,43 @@ export default function FolderContentsScreen() {
       load();
     }, [load])
   );
+
+  const onLookupEmp = async () => {
+    setEmpError(null);
+    setEmpFound(null);
+    if (!empCode.trim()) return;
+    const user = await getProfileByCode(empCode);
+    if (!user) {
+      setEmpError(t('userNotFound'));
+      return;
+    }
+    if (user.id === profile?.id) {
+      setEmpError(t('cannotEvaluateOwn'));
+      return;
+    }
+    setEmpFound(user);
+  };
+
+  const onConfirmEmp = async () => {
+    if (!profile || !empFound || !id) return;
+    setEmpBusy(true);
+    try {
+      // Classify the employee directly into THIS folder.
+      await addSupervision({
+        supervisor_id: profile.id,
+        subordinate_id: empFound.id,
+        placement: 'folder',
+        folder_id: id,
+      });
+      setEmpModal(false);
+      setEmpCode('');
+      setEmpFound(null);
+    } catch (e: any) {
+      setEmpError(e?.message ?? t('error'));
+    } finally {
+      setEmpBusy(false);
+    }
+  };
 
   if (loading) return <Loading />;
 
@@ -160,6 +209,73 @@ export default function FolderContentsScreen() {
               </View>
               <Text style={styles.menuLabel}>{t('addSubFolder')}</Text>
             </Pressable>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                setAddMenu(false);
+                setEmpModal(true);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="person-add-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('addEmployee')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Add employee directly into this folder */}
+      <Modal visible={empModal} transparent animationType="fade" onRequestClose={() => setEmpModal(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setEmpModal(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.sheetTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('addByUserId')}
+            </Text>
+            <View style={[styles.lookupRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={{ flex: 1 }}>
+                <Input
+                  value={empCode}
+                  onChangeText={setEmpCode}
+                  placeholder={t('enterUserId')}
+                  autoCapitalize="characters"
+                  style={{ marginBottom: 0 }}
+                />
+              </View>
+              <Pressable style={styles.lookupBtn} onPress={onLookupEmp}>
+                <Ionicons name="search" size={20} color={colors.onPrimary} />
+              </Pressable>
+            </View>
+
+            {empFound ? (
+              <>
+                <Card style={{ marginBottom: spacing.lg }}>
+                  <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    <Avatar name={empFound.full_name} uri={empFound.avatar_url} size={40} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.title}>{empFound.full_name}</Text>
+                      <Text style={styles.date}>{empFound.user_code}</Text>
+                    </View>
+                    <Ionicons name="checkmark-circle" size={22} color={colors.success} />
+                  </View>
+                </Card>
+                <Button
+                  title={empBusy ? t('saving') : t('add')}
+                  onPress={onConfirmEmp}
+                  loading={empBusy}
+                  icon="checkmark"
+                />
+              </>
+            ) : null}
+
+            {empError ? <Text style={styles.error}>{empError}</Text> : null}
+
+            <Button
+              title={t('cancel')}
+              variant="outline"
+              onPress={() => setEmpModal(false)}
+              style={{ marginTop: spacing.sm }}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -220,4 +336,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuLabel: { fontSize: 16, fontWeight: '600', color: colors.textDark },
+  lookupRow: { alignItems: 'flex-end', gap: spacing.sm, marginBottom: spacing.lg },
+  lookupBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  error: { color: colors.danger, textAlign: 'center', marginTop: spacing.sm },
 });
