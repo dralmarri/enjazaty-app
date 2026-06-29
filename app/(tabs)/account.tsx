@@ -76,7 +76,11 @@ export default function AccountScreen() {
 
   return (
     <Screen>
-      <Header title={t('account')} />
+      <Header
+        title={t('account')}
+        rightIcon="create-outline"
+        onRightPress={() => router.push('/edit-profile')}
+      />
 
       {/* Profile card with avatar + change photo */}
       <Card style={styles.profileCard}>
