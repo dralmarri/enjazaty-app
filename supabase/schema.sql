@@ -10,6 +10,31 @@
 -- Required for gen_random_uuid()
 create extension if not exists "pgcrypto";
 
+-- =============================================================================
+-- 1) users_profile
+-- Profile data extending Supabase auth. For self-registered users, `id`
+-- equals auth.users.id. Admin-invited employees may exist before they have an
+-- auth login (id is a fresh uuid); they link up on first sign-in by email.
+--
+-- NOTE: this table is created BEFORE the is_admin() helper below because that
+-- helper is a SQL-language function whose body is validated at creation time
+-- and references this table.
+-- =============================================================================
+create table if not exists public.users_profile (
+  id            uuid primary key default gen_random_uuid(),
+  user_code     text unique not null,
+  full_name     text not null,
+  email         text not null,
+  role          text not null default 'employee' check (role in ('admin','employee')),
+  job_title     text,
+  department_id uuid,
+  avatar_url    text,
+  phone         text,
+  manager_id    uuid references public.users_profile(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
 -- -----------------------------------------------------------------------------
 -- Helper: is the current auth user an admin?  (SECURITY DEFINER avoids the
 -- recursive-RLS problem when policies need to read users_profile.)
@@ -26,27 +51,6 @@ as $$
     where id = auth.uid() and role = 'admin'
   );
 $$;
-
--- =============================================================================
--- 1) users_profile
--- Profile data extending Supabase auth. For self-registered users, `id`
--- equals auth.users.id. Admin-invited employees may exist before they have an
--- auth login (id is a fresh uuid); they link up on first sign-in by email.
--- =============================================================================
-create table if not exists public.users_profile (
-  id            uuid primary key default gen_random_uuid(),
-  user_code     text unique not null,
-  full_name     text not null,
-  email         text not null,
-  role          text not null default 'employee' check (role in ('admin','employee')),
-  job_title     text,
-  department_id uuid,
-  avatar_url    text,
-  phone         text,
-  manager_id    uuid references public.users_profile(id) on delete set null,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now()
-);
 
 alter table public.users_profile enable row level security;
 
