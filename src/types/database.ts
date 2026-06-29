@@ -16,10 +16,29 @@ export interface UserProfile {
   department_id: string | null;
   avatar_url: string | null;
   phone: string | null;
+  /** Kuwait educational region (المنطقة التعليمية). */
+  educational_region: string | null;
+  /** Employee work center (مركز العمل). */
+  work_center: string | null;
+  /** Admin's administration unit (الإدارة التابع لها). */
+  administration: string | null;
   /** For employees: the admin (manager) who owns/created them. */
   manager_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * supervisions — a supervisor adds a subordinate (by User ID) and places them
+ * either in their workspace home or in one of their folders.
+ */
+export interface Supervision {
+  id: string;
+  supervisor_id: string;
+  subordinate_id: string;
+  placement: 'workspace' | 'folder';
+  folder_id: string | null;
+  created_at: string;
 }
 
 /** departments — organizational units created by admins. */
@@ -88,14 +107,16 @@ export interface Note {
   created_at: string;
 }
 
-/** evaluations — admin reviews/ratings of an employee's achievement. */
+/** evaluations — a supervisor's review/rating of a subordinate's achievement. */
 export interface Evaluation {
   id: string;
   achievement_id: string;
   employee_id: string;
-  evaluator_id: string; // admin
+  evaluator_id: string; // supervisor
   rating: number; // 1..5
   comment: string | null;
+  /** Electronic signature (typed full name of the evaluating supervisor). */
+  signature: string | null;
   created_at: string;
 }
 

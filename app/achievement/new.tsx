@@ -5,7 +5,7 @@
  * and links (uploaded to Supabase Storage), then saves the achievement +
  * its attachments and notifies the user's manager.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
@@ -109,6 +109,18 @@ export default function NewAchievementScreen() {
       ]);
     }
   };
+
+  // Auto-open the matching picker when arriving from the home "Add" dropdown
+  // (?attach=image|video|file). Runs once.
+  const { attach } = useLocalSearchParams<{ attach?: string }>();
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoOpened.current || !attach) return;
+    autoOpened.current = true;
+    if (attach === 'file') pickFile();
+    else pickImage(); // image / video both come from the media library
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attach]);
 
   const addLink = () => {
     if (!linkUrl.trim()) return;

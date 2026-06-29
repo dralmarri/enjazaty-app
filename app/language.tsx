@@ -22,7 +22,8 @@ export default function LanguageScreen() {
 
   const onContinue = async () => {
     await setLanguage(selected);
-    router.replace('/(auth)/login');
+    // Next step in onboarding: choose user type (employee / admin).
+    router.replace('/role');
   };
 
   return (

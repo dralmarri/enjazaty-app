@@ -9,3 +9,5 @@ export { Badge } from './Badge';
 export { Avatar } from './Avatar';
 export { Loading } from './Loading';
 export { SectionTitle } from './SectionTitle';
+export { Select } from './Select';
+export type { SelectOption } from './Select';

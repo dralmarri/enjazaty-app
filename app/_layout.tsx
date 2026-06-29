@@ -27,11 +27,15 @@ export default function RootLayout() {
             >
               <Stack.Screen name="index" />
               <Stack.Screen name="language" />
+              <Stack.Screen name="role" />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="achievement" />
               <Stack.Screen name="employees" />
-              <Stack.Screen name="notes" />
+              <Stack.Screen name="members" />
+              <Stack.Screen name="folder" />
+              <Stack.Screen name="evaluate" />
+              <Stack.Screen name="privacy" />
             </Stack>
           </AuthProvider>
         </LanguageProvider>

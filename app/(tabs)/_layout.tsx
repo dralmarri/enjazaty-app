@@ -1,9 +1,9 @@
 /**
- * Bottom tab navigation (fixed): Workspace, Files, Activity,
- * Notifications/Analytics, Account.
+ * Bottom tab navigation (fixed): Home, Activity, Search, Account.
+ * Analytics + the achievement counters live inside the Activity tab.
  *
  * Guards the whole app section — unauthenticated users are redirected to the
- * language/login flow.
+ * onboarding flow; signed-in users without a profile complete it first.
  */
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,11 +14,12 @@ import { Loading } from '@/components';
 import { colors } from '@/theme/colors';
 
 export default function TabsLayout() {
-  const { session, profile, loading, isAdmin } = useAuth();
+  const { session, profile, loading } = useAuth();
   const { t } = useLanguage();
 
   if (loading) return <Loading />;
-  if (!session || !profile) return <Redirect href="/language" />;
+  if (!session) return <Redirect href="/language" />;
+  if (!profile) return <Redirect href="/(auth)/complete-profile" />;
 
   return (
     <Tabs
@@ -41,16 +42,7 @@ export default function TabsLayout() {
         options={{
           title: t('workspace'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="files"
-        options={{
-          title: t('files'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="folder-outline" size={size} color={color} />
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
@@ -64,16 +56,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="search"
         options={{
-          // Admins see analytics-leaning content; employees see notifications.
-          title: isAdmin ? t('analytics') : t('notifications'),
+          title: t('search'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name={isAdmin ? 'analytics-outline' : 'notifications-outline'}
-              size={size}
-              color={color}
-            />
+            <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />

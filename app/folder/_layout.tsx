@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 
-// Stack for the notes & evaluation screen.
-export default function NotesLayout() {
+// Stack for folder creation/management screens.
+export default function FolderLayout() {
   return <Stack screenOptions={{ headerShown: false }} />;
 }

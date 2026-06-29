@@ -11,7 +11,6 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Avatar,
   Badge,
-  Button,
   Card,
   EmptyState,
   Header,
@@ -87,15 +86,8 @@ export default function EmployeeProfileScreen() {
         </View>
       </Card>
 
-      <Button
-        title={t('notesAndEvaluation')}
-        icon="star-outline"
-        onPress={() => router.push(`/notes/${employee.id}?employee=1`)}
-        style={{ marginTop: spacing.lg }}
-      />
-
-      {/* Employee achievements */}
-      <SectionTitle title={t('myAchievements')} />
+      {/* Tap any achievement to open the evaluation (supervisor only). */}
+      <SectionTitle title={t('notesAndEvaluation')} />
       {achievements.length === 0 ? (
         <EmptyState message={t('noAchievements')} />
       ) : (
@@ -103,7 +95,7 @@ export default function EmployeeProfileScreen() {
           <Card
             key={item.id}
             style={styles.achCard}
-            onPress={() => router.push(`/achievement/${item.id}`)}
+            onPress={() => router.push(`/evaluate/${item.id}`)}
           >
             <View style={[styles.achRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <View style={styles.achIcon}>

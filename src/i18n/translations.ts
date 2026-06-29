@@ -137,6 +137,70 @@ export const translations = {
     add: 'إضافة',
     close: 'إغلاق',
     search: 'بحث',
+
+    // Role selection screen
+    chooseUserType: 'اختر نوع المستخدم',
+    chooseUserTypeHint: 'حدّد دورك للمتابعة',
+    adminDesc: 'إدارة الموظفين والتقييم ومتابعة الإنجازات',
+    employeeDesc: 'إدارة إنجازاتك ومساحة عملك',
+
+    // OTP verification
+    verifyEmail: 'تأكيد البريد الإلكتروني',
+    otpSentTo: 'أرسلنا رمز تحقّق إلى',
+    enterOtp: 'أدخل رمز التحقق',
+    otpCode: 'رمز التحقق',
+    verify: 'تحقّق',
+    verifying: 'جاري التحقق...',
+    resendOtp: 'إعادة إرسال الرمز',
+    otpInvalid: 'الرمز غير صحيح أو منتهي',
+
+    // Complete profile
+    completeYourProfile: 'استكمال البيانات',
+    educationalRegion: 'المنطقة التعليمية',
+    selectRegion: 'اختر المنطقة التعليمية',
+    workCenter: 'مركز العمل',
+    administration: 'الإدارة التابع لها',
+    saveAndContinue: 'حفظ ومتابعة',
+
+    // Home / dates
+    birthDate: 'التاريخ',
+    addAchievementType: 'إضافة إنجاز',
+    typeFolder: 'مجلد',
+    typeFile: 'ملف',
+    typeImage: 'صورة',
+    typeVideo: 'فيديو',
+
+    // Members / supervisions
+    members: 'الأعضاء',
+    viewMembers: 'عرض الأعضاء',
+    membersHint: 'المسؤولون الذين يمكنهم مشاهدة صفحتك',
+    noMembers: 'لا يوجد أعضاء بعد',
+    addByUserId: 'الإضافة عبر معرّف المستخدم',
+    enterUserId: 'أدخل معرّف المستخدم',
+    classification: 'التصنيف',
+    placeInWorkspace: 'مساحة العمل (الرئيسية)',
+    placeInFolder: 'داخل مجلد',
+    userNotFound: 'لم يتم العثور على مستخدم بهذا المعرّف',
+    employeeAdded: 'تمت إضافة الموظف',
+
+    // Evaluation / signature
+    eSignature: 'التوقيع الإلكتروني',
+    signHint: 'اكتب اسمك الكامل كتوقيع',
+    evaluationLocked: 'تم اعتماد التقييم',
+    evaluationLockedHint: 'هذا التقييم معتمد ولا يمكن تعديله',
+    evaluationReport: 'تقرير التقييم',
+    evaluatedBy: 'المُقيّم',
+    cannotEvaluateOwn: 'لا يمكنك تقييم ملفاتك الشخصية',
+
+    // Account
+    privacy: 'الخصوصية',
+    changePhoto: 'تغيير الصورة الشخصية',
+    copied: 'تم النسخ',
+    copy: 'نسخ',
+
+    // Search
+    searchHint: 'ابحث في الإنجازات والموظفين',
+    noResults: 'لا توجد نتائج',
   },
 
   en: {
@@ -259,6 +323,62 @@ export const translations = {
     add: 'Add',
     close: 'Close',
     search: 'Search',
+
+    chooseUserType: 'Choose user type',
+    chooseUserTypeHint: 'Select your role to continue',
+    adminDesc: 'Manage employees, evaluate and track achievements',
+    employeeDesc: 'Manage your achievements and workspace',
+
+    verifyEmail: 'Verify your email',
+    otpSentTo: 'We sent a verification code to',
+    enterOtp: 'Enter the verification code',
+    otpCode: 'Verification code',
+    verify: 'Verify',
+    verifying: 'Verifying...',
+    resendOtp: 'Resend code',
+    otpInvalid: 'The code is invalid or expired',
+
+    completeYourProfile: 'Complete your details',
+    educationalRegion: 'Educational region',
+    selectRegion: 'Select educational region',
+    workCenter: 'Work center',
+    administration: 'Administration',
+    saveAndContinue: 'Save and continue',
+
+    birthDate: 'Date',
+    addAchievementType: 'Add achievement',
+    typeFolder: 'Folder',
+    typeFile: 'File',
+    typeImage: 'Image',
+    typeVideo: 'Video',
+
+    members: 'Members',
+    viewMembers: 'View members',
+    membersHint: 'Supervisors who can view your page',
+    noMembers: 'No members yet',
+    addByUserId: 'Add by User ID',
+    enterUserId: 'Enter User ID',
+    classification: 'Classification',
+    placeInWorkspace: 'Workspace (home)',
+    placeInFolder: 'Inside a folder',
+    userNotFound: 'No user found with this ID',
+    employeeAdded: 'Employee added',
+
+    eSignature: 'Electronic signature',
+    signHint: 'Type your full name as signature',
+    evaluationLocked: 'Evaluation approved',
+    evaluationLockedHint: 'This evaluation is approved and cannot be changed',
+    evaluationReport: 'Evaluation report',
+    evaluatedBy: 'Evaluated by',
+    cannotEvaluateOwn: 'You cannot evaluate your own files',
+
+    privacy: 'Privacy',
+    changePhoto: 'Change profile photo',
+    copied: 'Copied',
+    copy: 'Copy',
+
+    searchHint: 'Search achievements and employees',
+    noResults: 'No results',
   },
 } as const;
 

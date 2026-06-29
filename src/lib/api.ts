@@ -15,6 +15,7 @@ import type {
   Folder,
   Note,
   NoteType,
+  Supervision,
   UserProfile,
 } from '@/types/database';
 
@@ -28,6 +29,41 @@ export async function getProfile(id: string): Promise<UserProfile | null> {
     .single();
   if (error) return null;
   return data as UserProfile;
+}
+
+/** Look up a user by their human-friendly User ID (user_code). */
+export async function getProfileByCode(
+  code: string
+): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from('users_profile')
+    .select('*')
+    .eq('user_code', code.trim())
+    .maybeSingle();
+  if (error) return null;
+  return (data as UserProfile) ?? null;
+}
+
+/** Update mutable fields on a profile (avatar, job title, etc.). */
+export async function updateProfile(
+  id: string,
+  patch: Partial<
+    Pick<
+      UserProfile,
+      | 'full_name'
+      | 'job_title'
+      | 'avatar_url'
+      | 'educational_region'
+      | 'work_center'
+      | 'administration'
+    >
+  >
+): Promise<void> {
+  const { error } = await supabase
+    .from('users_profile')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 /**
@@ -256,12 +292,26 @@ export async function listEvaluations(
   return (data ?? []) as Evaluation[];
 }
 
+/** The single evaluation for an achievement (null if not yet evaluated). */
+export async function getEvaluationByAchievement(
+  achievementId: string
+): Promise<Evaluation | null> {
+  const { data, error } = await supabase
+    .from('evaluations')
+    .select('*')
+    .eq('achievement_id', achievementId)
+    .maybeSingle();
+  if (error) return null;
+  return (data as Evaluation) ?? null;
+}
+
 export async function createEvaluation(input: {
   achievement_id: string;
   employee_id: string;
   evaluator_id: string;
   rating: number;
   comment?: string | null;
+  signature?: string | null;
 }): Promise<Evaluation> {
   const { data, error } = await supabase
     .from('evaluations')
@@ -269,7 +319,72 @@ export async function createEvaluation(input: {
     .select()
     .single();
   if (error) throw error;
+  // Mark the achievement as approved once it has been evaluated/signed.
+  await supabase
+    .from('achievements')
+    .update({ status: 'approved', updated_at: new Date().toISOString() })
+    .eq('id', input.achievement_id);
   return data as Evaluation;
+}
+
+/* ------------------------------ Supervisions ----------------------------- */
+
+/** Supervisors (members) who can view the given user's page. */
+export async function listMembers(subordinateId: string): Promise<UserProfile[]> {
+  const { data, error } = await supabase
+    .from('supervisions')
+    .select('supervisor:supervisor_id (*)')
+    .eq('subordinate_id', subordinateId);
+  if (error) throw error;
+  return ((data ?? []) as any[]).map((r) => r.supervisor as UserProfile);
+}
+
+/** Subordinates that the given supervisor manages (with placement info). */
+export async function listSupervisions(
+  supervisorId: string
+): Promise<(Supervision & { subordinate: UserProfile })[]> {
+  const { data, error } = await supabase
+    .from('supervisions')
+    .select('*, subordinate:subordinate_id (*)')
+    .eq('supervisor_id', supervisorId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
+export async function addSupervision(input: {
+  supervisor_id: string;
+  subordinate_id: string;
+  placement: 'workspace' | 'folder';
+  folder_id?: string | null;
+}): Promise<void> {
+  const { error } = await supabase.from('supervisions').insert({
+    supervisor_id: input.supervisor_id,
+    subordinate_id: input.subordinate_id,
+    placement: input.placement,
+    folder_id: input.folder_id ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function removeSupervision(id: string): Promise<void> {
+  const { error } = await supabase.from('supervisions').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/** True when `supervisorId` supervises `subordinateId`. */
+export async function supervises(
+  supervisorId: string,
+  subordinateId: string
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('supervisions')
+    .select('id')
+    .eq('supervisor_id', supervisorId)
+    .eq('subordinate_id', subordinateId)
+    .maybeSingle();
+  if (error) return false;
+  return !!data;
 }
 
 /* ------------------------------ Notifications ---------------------------- */

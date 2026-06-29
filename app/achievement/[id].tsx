@@ -23,32 +23,36 @@ import { useLanguage } from '@/context/LanguageContext';
 import {
   deleteAchievement,
   getAchievement,
+  getEvaluationByAchievement,
   listAttachments,
   updateAchievementStatus,
 } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Attachment } from '@/types/database';
+import type { Achievement, Attachment, Evaluation } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function AchievementDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { profile, isAdmin } = useAuth();
+  const { profile } = useAuth();
   const { t, language, isRTL } = useLanguage();
 
   const [achievement, setAchievement] = useState<Achievement | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [ach, atts] = await Promise.all([
+      const [ach, atts, evalReport] = await Promise.all([
         getAchievement(id),
         listAttachments(id),
+        getEvaluationByAchievement(id),
       ]);
       setAchievement(ach);
       setAttachments(atts);
+      setEvaluation(evalReport);
     } finally {
       setLoading(false);
     }
@@ -145,17 +149,36 @@ export default function AchievementDetailsScreen() {
         ))
       )}
 
+      {/* Evaluation report (read-only) — shown once a supervisor has signed. */}
+      {evaluation ? (
+        <>
+          <SectionTitle title={t('evaluationReport')} />
+          <Card style={styles.evalCard}>
+            <View style={[styles.evalTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Ionicons
+                    key={n}
+                    name={n <= evaluation.rating ? 'star' : 'star-outline'}
+                    size={18}
+                    color={colors.primary}
+                  />
+                ))}
+              </View>
+              <Badge label={t('evaluationLocked')} tone="success" />
+            </View>
+            {evaluation.comment ? (
+              <Text style={styles.evalComment}>{evaluation.comment}</Text>
+            ) : null}
+            {evaluation.signature ? (
+              <Text style={styles.signature}>✍️ {evaluation.signature}</Text>
+            ) : null}
+          </Card>
+        </>
+      ) : null}
+
       {/* Actions */}
       <View style={styles.actions}>
-        {/* Admin can review & evaluate */}
-        {isAdmin ? (
-          <Button
-            title={t('notesAndEvaluation')}
-            icon="star-outline"
-            onPress={() => router.push(`/notes/${achievement.id}`)}
-          />
-        ) : null}
-
         {/* Owner can submit a draft for review */}
         {isOwner && achievement.status === 'draft' ? (
           <Button
@@ -185,6 +208,11 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, color: colors.textDark, marginTop: spacing.md, lineHeight: 22 },
   metaRow: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
   metaText: { fontSize: 13, color: colors.mutedText },
+  evalCard: { gap: spacing.sm },
+  evalTop: { alignItems: 'center', justifyContent: 'space-between' },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  evalComment: { fontSize: 14, color: colors.textDark },
+  signature: { fontSize: 13, fontWeight: '700', color: colors.primaryDark, fontStyle: 'italic' },
   attachCard: { marginBottom: spacing.sm, paddingVertical: spacing.md },
   attachRow: { alignItems: 'center', gap: spacing.md },
   attachIcon: {

@@ -1,8 +1,9 @@
 /**
  * AuthContext — wraps Supabase auth + the users_profile record.
  *
- * Exposes the current session, the loaded profile, role helpers, and the
- * sign-in / sign-up / sign-out actions used across the app.
+ * Flow: signUp(email,password,role) → email OTP → verifyOtp → completeProfile.
+ * The chosen role is stored in the auth user metadata so it survives the OTP
+ * step (and app restarts) until the profile row is created.
  */
 import React, {
   createContext,
@@ -16,13 +17,12 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { UserProfile, UserRole } from '@/types/database';
 
-interface SignUpParams {
-  email: string;
-  password: string;
+interface CompleteProfileParams {
   fullName: string;
-  role: UserRole;
   jobTitle?: string;
-  phone?: string;
+  educationalRegion?: string;
+  workCenter?: string; // employees
+  administration?: string; // admins
 }
 
 interface AuthContextValue {
@@ -30,8 +30,19 @@ interface AuthContextValue {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  /** True when signed in but the profile row hasn't been created yet. */
+  needsProfile: boolean;
+  /** The role chosen during signup (from auth metadata). */
+  pendingRole: UserRole | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (params: SignUpParams) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    role: UserRole
+  ) => Promise<{ needsVerification: boolean }>;
+  verifyOtp: (email: string, token: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<void>;
+  completeProfile: (params: CompleteProfileParams) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -56,14 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .from('users_profile')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     if (error) {
       // eslint-disable-next-line no-console
       console.warn('[Auth] Failed to load profile:', error.message);
       setProfile(null);
       return;
     }
-    setProfile(data as UserProfile);
+    setProfile((data as UserProfile) ?? null);
   }, []);
 
   // Bootstrap: read existing session and subscribe to auth changes.
@@ -105,40 +116,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = useCallback(
-    async ({ email, password, fullName, role, jobTitle, phone }: SignUpParams) => {
-      // 1) Create the auth user.
+    async (email: string, password: string, role: UserRole) => {
+      // Role is stored in metadata so it survives the OTP verification step.
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { full_name: fullName, role } },
+        options: { data: { role } },
       });
       if (error) throw error;
-
-      const user = data.user;
-      if (!user) {
-        // Email confirmation flow — no immediate session/profile to create.
-        return;
-      }
-
-      // 2) Create the matching users_profile record.
-      const { error: profileError } = await supabase
-        .from('users_profile')
-        .insert({
-          id: user.id,
-          user_code: generateUserCode(role),
-          full_name: fullName,
-          email: email.trim(),
-          role,
-          job_title: jobTitle ?? null,
-          phone: phone ?? null,
-        });
-      if (profileError) throw profileError;
-
-      if (data.session?.user) {
-        await loadProfile(data.session.user.id);
-      }
+      // If email confirmation is enabled there is no session yet → verify OTP.
+      return { needsVerification: !data.session };
     },
-    [loadProfile]
+    []
+  );
+
+  const verifyOtp = useCallback(async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: token.trim(),
+      type: 'signup',
+    });
+    if (error) throw error;
+  }, []);
+
+  const resendOtp = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+    });
+    if (error) throw error;
+  }, []);
+
+  const completeProfile = useCallback(
+    async ({
+      fullName,
+      jobTitle,
+      educationalRegion,
+      workCenter,
+      administration,
+    }: CompleteProfileParams) => {
+      const user = session?.user;
+      if (!user) throw new Error('No authenticated user');
+      const role = (user.user_metadata?.role as UserRole) ?? 'employee';
+
+      const { error } = await supabase.from('users_profile').insert({
+        id: user.id,
+        user_code: generateUserCode(role),
+        full_name: fullName,
+        email: user.email ?? '',
+        role,
+        job_title: jobTitle ?? null,
+        educational_region: educationalRegion ?? null,
+        work_center: workCenter ?? null,
+        administration: administration ?? null,
+      });
+      if (error) throw error;
+      await loadProfile(user.id);
+    },
+    [session, loadProfile]
   );
 
   const signOut = useCallback(async () => {
@@ -157,12 +192,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       loading,
       isAdmin: profile?.role === 'admin',
+      needsProfile: !!session && !profile,
+      pendingRole: (session?.user?.user_metadata?.role as UserRole) ?? null,
       signIn,
       signUp,
+      verifyOtp,
+      resendOtp,
+      completeProfile,
       signOut,
       refreshProfile,
     }),
-    [session, profile, loading, signIn, signUp, signOut, refreshProfile]
+    [
+      session,
+      profile,
+      loading,
+      signIn,
+      signUp,
+      verifyOtp,
+      resendOtp,
+      completeProfile,
+      signOut,
+      refreshProfile,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

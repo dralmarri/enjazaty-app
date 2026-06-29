@@ -1,35 +1,38 @@
 /**
- * Screen 3 — Create account + complete the job profile.
- * Includes user-type selection (admin / employee) and job details.
+ * Screen 3 — Create account (email + password only).
+ * The role was chosen on the previous screen and arrives as a route param.
+ * On submit we sign up and move to the OTP verification screen.
  */
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
-import { Button, Input, Screen, Header } from '@/components';
+import { Link, router, useLocalSearchParams } from 'expo-router';
+import { Button, Header, Input, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import type { UserRole } from '@/types/database';
-import { colors, radius, spacing } from '@/theme/colors';
+import { colors, spacing } from '@/theme/colors';
 
 export default function SignupScreen() {
   const { t, isRTL } = useLanguage();
   const { signUp } = useAuth();
+  const params = useLocalSearchParams<{ role?: string }>();
+  const role: UserRole = params.role === 'admin' ? 'admin' : 'employee';
 
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
-  const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<UserRole>('employee');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async () => {
     setError(null);
-    if (!fullName || !email || !password) {
+    if (!email || !password) {
       setError(t('required'));
+      return;
+    }
+    if (password.length < 6) {
+      setError(isRTL ? 'كلمة المرور 6 أحرف على الأقل' : 'Password must be at least 6 characters');
       return;
     }
     if (password !== confirm) {
@@ -38,8 +41,14 @@ export default function SignupScreen() {
     }
     setLoading(true);
     try {
-      await signUp({ email, password, fullName, role, jobTitle, phone });
-      router.replace('/(tabs)/workspace');
+      const { needsVerification } = await signUp(email, password, role);
+      if (needsVerification) {
+        // Go verify the email via the OTP code.
+        router.replace(`/(auth)/verify?email=${encodeURIComponent(email.trim())}`);
+      } else {
+        // Email confirmation disabled → straight to profile completion.
+        router.replace('/(auth)/complete-profile');
+      }
     } catch (e: any) {
       setError(e?.message ?? t('error'));
     } finally {
@@ -47,16 +56,24 @@ export default function SignupScreen() {
     }
   };
 
-  const roles: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { value: 'employee', label: t('employee'), icon: 'person-outline' },
-    { value: 'admin', label: t('admin'), icon: 'shield-checkmark-outline' },
-  ];
-
   return (
     <Screen>
-      <Header title={t('signup')} subtitle={t('completeProfile')} showBack />
+      <Header
+        title={t('signup')}
+        subtitle={role === 'admin' ? t('admin') : t('employee')}
+        showBack
+      />
 
-      <Input label={t('fullName')} value={fullName} onChangeText={setFullName} />
+      <View style={styles.hero}>
+        <View style={styles.logoCircle}>
+          <Ionicons
+            name={role === 'admin' ? 'shield-checkmark' : 'person'}
+            size={32}
+            color={colors.onPrimary}
+          />
+        </View>
+      </View>
+
       <Input
         label={t('email')}
         value={email}
@@ -65,38 +82,6 @@ export default function SignupScreen() {
         autoCapitalize="none"
         autoCorrect={false}
         placeholder="name@example.com"
-      />
-
-      {/* User type selection */}
-      <Text style={styles.label}>{t('userType')}</Text>
-      <View style={styles.roleRow}>
-        {roles.map((r) => {
-          const active = role === r.value;
-          return (
-            <Pressable
-              key={r.value}
-              onPress={() => setRole(r.value)}
-              style={[styles.roleCard, active && styles.roleCardActive]}
-            >
-              <Ionicons
-                name={r.icon}
-                size={26}
-                color={active ? colors.primaryDark : colors.mutedText}
-              />
-              <Text style={[styles.roleText, active && styles.roleTextActive]}>
-                {r.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} />
-      <Input
-        label={t('phone')}
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
       />
       <Input
         label={t('password')}
@@ -135,40 +120,22 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textDark,
-    marginBottom: spacing.sm,
-  },
-  roleRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  roleCard: {
-    flex: 1,
+  hero: { alignItems: 'center', marginBottom: spacing.lg },
+  logoCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.primary,
     alignItems: 'center',
-    paddingVertical: spacing.lg,
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    gap: spacing.sm,
+    justifyContent: 'center',
   },
-  roleCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.softBackground,
-  },
-  roleText: { fontSize: 14, fontWeight: '700', color: colors.mutedText },
-  roleTextActive: { color: colors.primaryDark },
   error: {
     color: colors.danger,
     marginBottom: spacing.md,
     textAlign: 'center',
     fontSize: 14,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing.xl,
-  },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xl },
   footerText: { color: colors.mutedText, fontSize: 14 },
   link: { color: colors.primaryDark, fontWeight: '800', fontSize: 14 },
 });
