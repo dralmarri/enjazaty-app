@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "إنجازاتي",
+    "slug": "enjazaty-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "enjazaty",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF8E6"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.enjazaty.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "نحتاج الوصول إلى الصور لرفع المرفقات والإنجازات.",
+        "NSCameraUsageDescription": "نحتاج الوصول إلى الكاميرا لالتقاط الصور.",
+        "NSMicrophoneUsageDescription": "نحتاج الوصول إلى الميكروفون لتسجيل الملاحظات الصوتية."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F4B000"
+      },
+      "package": "com.enjazaty.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يسمح التطبيق بالوصول إلى صورك لرفع المرفقات."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "يسمح التطبيق بتسجيل الملاحظات الصوتية."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}
