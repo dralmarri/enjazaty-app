@@ -31,6 +31,7 @@ export default function WorkspaceScreen() {
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
+  const [fileMenu, setFileMenu] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -60,7 +61,7 @@ export default function WorkspaceScreen() {
   // Today's Gregorian date, shown under the greeting.
   const today = formatDate(new Date().toISOString(), language);
 
-  // "Add achievement" dropdown options.
+  // First level: Folder or File.
   const addOptions: {
     key: string;
     label: string;
@@ -77,19 +78,37 @@ export default function WorkspaceScreen() {
       key: 'file',
       label: t('typeFile'),
       icon: 'document-outline',
-      onPress: () => router.push('/achievement/new?attach=file'),
+      onPress: () => {
+        setAddMenu(false);
+        setFileMenu(true);
+      },
+    },
+  ];
+
+  // Second level (when "File" is chosen): where to get the file from.
+  const fileOptions: {
+    key: string;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    onPress: () => void;
+  }[] = [
+    {
+      key: 'library',
+      label: t('fromLibrary'),
+      icon: 'images-outline',
+      onPress: () => router.push('/achievement/new?source=library'),
     },
     {
-      key: 'image',
-      label: t('typeImage'),
-      icon: 'image-outline',
-      onPress: () => router.push('/achievement/new?attach=image'),
+      key: 'camera',
+      label: t('fromCamera'),
+      icon: 'camera-outline',
+      onPress: () => router.push('/achievement/new?source=camera'),
     },
     {
-      key: 'video',
-      label: t('typeVideo'),
-      icon: 'videocam-outline',
-      onPress: () => router.push('/achievement/new?attach=video'),
+      key: 'files',
+      label: t('fromFiles'),
+      icon: 'document-outline',
+      onPress: () => router.push('/achievement/new?source=files'),
     },
   ];
 
@@ -222,6 +241,30 @@ export default function WorkspaceScreen() {
                 style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
                 onPress={() => {
                   setAddMenu(false);
+                  opt.onPress();
+                }}
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons name={opt.icon} size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.menuLabel}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* File source submenu (library / camera / files) */}
+      <Modal visible={fileMenu} transparent animationType="fade" onRequestClose={() => setFileMenu(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setFileMenu(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{t('typeFile')}</Text>
+            {fileOptions.map((opt) => (
+              <Pressable
+                key={opt.key}
+                style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={() => {
+                  setFileMenu(false);
                   opt.onPress();
                 }}
               >

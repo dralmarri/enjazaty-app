@@ -95,6 +95,25 @@ export default function NewAchievementScreen() {
     }
   };
 
+  // Capture a photo directly from the camera.
+  const pickCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return;
+    const res = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+    if (!res.canceled && res.assets[0]) {
+      const asset = res.assets[0];
+      setAttachments((prev) => [
+        ...prev,
+        {
+          type: 'image',
+          url: asset.uri,
+          name: asset.fileName ?? `photo-${prev.length + 1}.jpg`,
+          mimeType: asset.mimeType,
+        },
+      ]);
+    }
+  };
+
   const pickFile = async () => {
     const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
     if (!res.canceled && res.assets[0]) {
@@ -111,9 +130,10 @@ export default function NewAchievementScreen() {
     }
   };
 
-  // Route params: ?attach opens a picker, ?folder pre-selects a folder.
-  const { attach, folder: folderParam } = useLocalSearchParams<{
-    attach?: string;
+  // Route params: ?source opens a picker (library/camera/files),
+  // ?folder pre-selects a folder.
+  const { source, folder: folderParam } = useLocalSearchParams<{
+    source?: string;
     folder?: string;
   }>();
   const autoOpened = useRef(false);
@@ -121,10 +141,11 @@ export default function NewAchievementScreen() {
     if (autoOpened.current) return;
     autoOpened.current = true;
     if (folderParam) setFolderId(folderParam);
-    if (attach === 'file') pickFile();
-    else if (attach) pickImage(); // image / video both come from media library
+    if (source === 'camera') pickCamera();
+    else if (source === 'files') pickFile();
+    else if (source === 'library') pickImage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attach, folderParam]);
+  }, [source, folderParam]);
 
   const addLink = () => {
     if (!linkUrl.trim()) return;
@@ -205,13 +226,13 @@ export default function NewAchievementScreen() {
     }
   };
 
+  // The main file is chosen via the home "Add → File" flow, so here we only
+  // offer adding an extra link as an attachment.
   const attachActions: {
     label: string;
     icon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
   }[] = [
-    { label: t('addImage'), icon: 'image-outline', onPress: pickImage },
-    { label: t('addFile'), icon: 'document-outline', onPress: pickFile },
     { label: t('addLink'), icon: 'link-outline', onPress: () => setLinkModal(true) },
   ];
 

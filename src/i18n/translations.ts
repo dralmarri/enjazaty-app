@@ -214,6 +214,9 @@ export const translations = {
     subFolders: 'المجلدات الفرعية',
     addSubFolder: 'إضافة مجلد فرعي',
     addItem: 'إضافة',
+    fromLibrary: 'من مكتبة الصور',
+    fromCamera: 'التقاط صورة بالكاميرا',
+    fromFiles: 'من الملفات',
   },
 
   en: {
@@ -404,6 +407,9 @@ export const translations = {
     subFolders: 'Sub-folders',
     addSubFolder: 'Add sub-folder',
     addItem: 'Add',
+    fromLibrary: 'From photo library',
+    fromCamera: 'Take a photo',
+    fromFiles: 'From files',
   },
 } as const;
 
