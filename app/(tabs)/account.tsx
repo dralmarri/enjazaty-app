@@ -176,6 +176,10 @@ export default function AccountScreen() {
         loading={loggingOut}
         style={{ marginTop: spacing.xl }}
       />
+
+      {/* Credit */}
+      <Text style={styles.credit}>{t('developedBy')}</Text>
+      <Text style={styles.creditEn}>Developed by Hanadi Almarri</Text>
     </Screen>
   );
 }
@@ -256,4 +260,17 @@ const styles = StyleSheet.create({
   langChipActive: { borderColor: colors.primary, backgroundColor: colors.softBackground },
   langText: { fontSize: 14, fontWeight: '700', color: colors.mutedText },
   langTextActive: { color: colors.primaryDark },
+  credit: {
+    textAlign: 'center',
+    marginTop: spacing.xl,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
+  creditEn: {
+    textAlign: 'center',
+    marginTop: 2,
+    fontSize: 12,
+    color: colors.mutedText,
+  },
 });

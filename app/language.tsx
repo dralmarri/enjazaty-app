@@ -64,6 +64,8 @@ export default function LanguageScreen() {
       </View>
 
       <Button title={t('continue')} icon="arrow-forward" onPress={onContinue} />
+
+      <Text style={styles.credit}>{t('developedBy')}</Text>
     </Screen>
   );
 }
@@ -111,4 +113,11 @@ const styles = StyleSheet.create({
   optionNative: { fontSize: 18, fontWeight: '800', color: colors.textDark },
   optionTextActive: { color: colors.primaryDark },
   optionLabel: { fontSize: 13, color: colors.mutedText, marginTop: 2 },
+  credit: {
+    textAlign: 'center',
+    marginTop: spacing.xxl,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primaryDark,
+  },
 });

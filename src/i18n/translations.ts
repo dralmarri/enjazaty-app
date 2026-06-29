@@ -217,6 +217,7 @@ export const translations = {
     fromLibrary: 'من مكتبة الصور',
     fromCamera: 'التقاط صورة بالكاميرا',
     fromFiles: 'من الملفات',
+    developedBy: 'تطوير: هنادي المري',
   },
 
   en: {
@@ -410,6 +411,7 @@ export const translations = {
     fromLibrary: 'From photo library',
     fromCamera: 'Take a photo',
     fromFiles: 'From files',
+    developedBy: 'Developed by Hanadi Almarri',
   },
 } as const;
 
