@@ -17,6 +17,7 @@ import {
   Loading,
   Screen,
   SectionTitle,
+  Select,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -25,10 +26,12 @@ import {
   getAchievement,
   getEvaluationByAchievement,
   listAttachments,
+  listFolders,
+  updateAchievementFolder,
   updateAchievementStatus,
 } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Attachment, Evaluation } from '@/types/database';
+import type { Achievement, Attachment, Evaluation, Folder } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function AchievementDetailsScreen() {
@@ -39,6 +42,7 @@ export default function AchievementDetailsScreen() {
   const [achievement, setAchievement] = useState<Achievement | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -53,10 +57,14 @@ export default function AchievementDetailsScreen() {
       setAchievement(ach);
       setAttachments(atts);
       setEvaluation(evalReport);
+      // Load the owner's folders so they can move this achievement.
+      if (ach && ach.owner_id === profile?.id) {
+        setFolders(await listFolders(ach.owner_id));
+      }
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, profile?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,6 +92,11 @@ export default function AchievementDetailsScreen() {
   const onDelete = async () => {
     await deleteAchievement(achievement.id);
     router.back();
+  };
+
+  const onMoveToFolder = async (value: string) => {
+    await updateAchievementFolder(achievement.id, value === '__none__' ? null : value);
+    await load();
   };
 
   const openAttachment = (att: Attachment) => {
@@ -175,6 +188,21 @@ export default function AchievementDetailsScreen() {
             ) : null}
           </Card>
         </>
+      ) : null}
+
+      {/* Move to folder (owner only) */}
+      {isOwner ? (
+        <View style={{ marginTop: spacing.lg }}>
+          <Select
+            label={t('moveToFolder')}
+            value={achievement.folder_id ?? '__none__'}
+            options={[
+              { label: t('noFolder'), value: '__none__' },
+              ...folders.map((f) => ({ label: f.name, value: f.id })),
+            ]}
+            onChange={onMoveToFolder}
+          />
+        </View>
       ) : null}
 
       {/* Actions */}

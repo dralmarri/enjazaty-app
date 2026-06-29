@@ -201,6 +201,16 @@ export const translations = {
     // Search
     searchHint: 'ابحث في الإنجازات والموظفين',
     noResults: 'لا توجد نتائج',
+
+    // Folders
+    folders: 'المجلدات',
+    folderContents: 'محتويات المجلد',
+    emptyFolder: 'هذا المجلد فارغ',
+    addToFolder: 'إضافة إنجاز للمجلد',
+    moveToFolder: 'نقل إلى مجلد',
+    noFolder: 'بدون مجلد',
+    moved: 'تم النقل',
+    employeeFolders: 'مجلدات الموظف',
   },
 
   en: {
@@ -379,6 +389,15 @@ export const translations = {
 
     searchHint: 'Search achievements and employees',
     noResults: 'No results',
+
+    folders: 'Folders',
+    folderContents: 'Folder contents',
+    emptyFolder: 'This folder is empty',
+    addToFolder: 'Add achievement to folder',
+    moveToFolder: 'Move to folder',
+    noFolder: 'No folder',
+    moved: 'Moved',
+    employeeFolders: 'Employee folders',
   },
 } as const;
 

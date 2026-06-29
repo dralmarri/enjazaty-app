@@ -18,15 +18,16 @@ import {
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { listAchievements } from '@/lib/api';
+import { listAchievements, listFolders } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement } from '@/types/database';
+import type { Achievement, Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 export default function WorkspaceScreen() {
   const { profile } = useAuth();
   const { t, language, isRTL } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
 
@@ -34,7 +35,12 @@ export default function WorkspaceScreen() {
     if (!profile) return;
     try {
       setRefreshing(true);
-      setAchievements(await listAchievements(profile.id));
+      const [achs, fdrs] = await Promise.all([
+        listAchievements(profile.id),
+        listFolders(profile.id),
+      ]);
+      setAchievements(achs);
+      setFolders(fdrs);
     } catch {
       // keep previous data on error
     } finally {
@@ -139,6 +145,27 @@ export default function WorkspaceScreen() {
           />
         </View>
       </Pressable>
+
+      {/* Folders (workspace) */}
+      {folders.length > 0 ? (
+        <>
+          <SectionTitle title={t('folders')} />
+          <View style={styles.folderGrid}>
+            {folders.map((f) => (
+              <Pressable
+                key={f.id}
+                style={styles.folderCard}
+                onPress={() => router.push(`/folder/${f.id}`)}
+              >
+                <Ionicons name="folder" size={28} color={colors.primary} />
+                <Text style={styles.folderName} numberOfLines={1}>
+                  {f.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       {/* Recent achievements */}
       <SectionTitle
@@ -250,6 +277,21 @@ const styles = StyleSheet.create({
   membersRow: { alignItems: 'center', gap: spacing.md },
   membersTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
   membersHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
+  folderGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  folderCard: {
+    width: '47%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    ...shadow,
+  },
+  folderName: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.textDark },
   achievementCard: { marginBottom: spacing.md },
   achRow: { alignItems: 'center', gap: spacing.md },
   achTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },

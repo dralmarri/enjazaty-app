@@ -137,6 +137,16 @@ export async function listFolders(ownerId: string): Promise<Folder[]> {
   return (data ?? []) as Folder[];
 }
 
+export async function getFolder(id: string): Promise<Folder | null> {
+  const { data, error } = await supabase
+    .from('folders')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) return null;
+  return (data as Folder) ?? null;
+}
+
 export async function createFolder(input: {
   name: string;
   description?: string | null;
@@ -169,6 +179,31 @@ export async function listAchievements(ownerId: string): Promise<Achievement[]> 
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Achievement[];
+}
+
+/** Achievements inside a specific folder (RLS controls visibility). */
+export async function listAchievementsByFolder(
+  folderId: string
+): Promise<Achievement[]> {
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .eq('folder_id', folderId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Achievement[];
+}
+
+/** Move an achievement into a folder (or out, with null). */
+export async function updateAchievementFolder(
+  id: string,
+  folderId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('achievements')
+    .update({ folder_id: folderId, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function getAchievement(id: string): Promise<Achievement | null> {

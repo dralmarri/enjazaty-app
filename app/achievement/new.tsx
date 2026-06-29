@@ -110,17 +110,20 @@ export default function NewAchievementScreen() {
     }
   };
 
-  // Auto-open the matching picker when arriving from the home "Add" dropdown
-  // (?attach=image|video|file). Runs once.
-  const { attach } = useLocalSearchParams<{ attach?: string }>();
+  // Route params: ?attach opens a picker, ?folder pre-selects a folder.
+  const { attach, folder: folderParam } = useLocalSearchParams<{
+    attach?: string;
+    folder?: string;
+  }>();
   const autoOpened = useRef(false);
   useEffect(() => {
-    if (autoOpened.current || !attach) return;
+    if (autoOpened.current) return;
     autoOpened.current = true;
+    if (folderParam) setFolderId(folderParam);
     if (attach === 'file') pickFile();
-    else pickImage(); // image / video both come from the media library
+    else if (attach) pickImage(); // image / video both come from media library
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attach]);
+  }, [attach, folderParam]);
 
   const addLink = () => {
     if (!linkUrl.trim()) return;

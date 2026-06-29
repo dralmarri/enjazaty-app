@@ -19,9 +19,9 @@ import {
   SectionTitle,
 } from '@/components';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfile, listAchievements } from '@/lib/api';
+import { getProfile, listAchievements, listFolders } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, UserProfile } from '@/types/database';
+import type { Achievement, Folder, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EmployeeProfileScreen() {
@@ -29,18 +29,21 @@ export default function EmployeeProfileScreen() {
   const { t, language, isRTL } = useLanguage();
   const [employee, setEmployee] = useState<UserProfile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [emp, achs] = await Promise.all([
+      const [emp, achs, fdrs] = await Promise.all([
         getProfile(id),
         listAchievements(id),
+        listFolders(id),
       ]);
       setEmployee(emp);
       setAchievements(achs);
+      setFolders(fdrs);
     } finally {
       setLoading(false);
     }
@@ -86,6 +89,29 @@ export default function EmployeeProfileScreen() {
         </View>
       </Card>
 
+      {/* Employee folders — supervisor can open them to browse files. */}
+      {folders.length > 0 ? (
+        <>
+          <SectionTitle title={t('employeeFolders')} />
+          <View style={styles.folderGrid}>
+            {folders.map((f) => (
+              <Card
+                key={f.id}
+                style={styles.folderCard}
+                onPress={() => router.push(`/folder/${f.id}`)}
+              >
+                <View style={[styles.folderRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Ionicons name="folder" size={24} color={colors.primary} />
+                  <Text style={styles.folderName} numberOfLines={1}>
+                    {f.name}
+                  </Text>
+                </View>
+              </Card>
+            ))}
+          </View>
+        </>
+      ) : null}
+
       {/* Tap any achievement to open the evaluation (supervisor only). */}
       <SectionTitle title={t('notesAndEvaluation')} />
       {achievements.length === 0 ? (
@@ -124,6 +150,10 @@ const styles = StyleSheet.create({
   stat: { alignItems: 'center' },
   statValue: { fontSize: 22, fontWeight: '900', color: colors.textDark },
   statLabel: { fontSize: 12, color: colors.mutedText },
+  folderGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.sm },
+  folderCard: { width: '47%', flexGrow: 1 },
+  folderRow: { alignItems: 'center', gap: spacing.md },
+  folderName: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textDark },
   achCard: { marginBottom: spacing.md },
   achRow: { alignItems: 'center', gap: spacing.md },
   achIcon: {

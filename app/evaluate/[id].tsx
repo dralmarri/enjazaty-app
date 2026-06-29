@@ -9,9 +9,9 @@
  *    (it never reopens). The report appears in the subordinate's Activity.
  */
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Badge,
   Button,
@@ -20,6 +20,7 @@ import {
   Input,
   Loading,
   Screen,
+  SectionTitle,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -28,11 +29,12 @@ import {
   createNotification,
   getAchievement,
   getEvaluationByAchievement,
+  listAttachments,
   supervises,
 } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import type { Achievement, Evaluation } from '@/types/database';
-import { colors, spacing } from '@/theme/colors';
+import type { Achievement, Attachment, Evaluation } from '@/types/database';
+import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EvaluateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +42,7 @@ export default function EvaluateScreen() {
   const { t, language, isRTL } = useLanguage();
 
   const [achievement, setAchievement] = useState<Achievement | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [canEvaluate, setCanEvaluate] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -57,8 +60,12 @@ export default function EvaluateScreen() {
     try {
       const ach = await getAchievement(id);
       setAchievement(ach);
-      const existing = await getEvaluationByAchievement(id);
+      const [existing, atts] = await Promise.all([
+        getEvaluationByAchievement(id),
+        listAttachments(id),
+      ]);
       setEvaluation(existing);
+      setAttachments(atts);
       if (ach) {
         // You may evaluate only OTHERS' work, and only if you supervise them
         // (admins may evaluate any subordinate's work too).
@@ -130,6 +137,46 @@ export default function EvaluateScreen() {
           <Text style={styles.achDesc}>{achievement.description}</Text>
         ) : null}
       </Card>
+
+      {/* Files/attachments — the supervisor opens them to review before signing. */}
+      {attachments.length > 0 ? (
+        <>
+          <SectionTitle title={t('attachments')} />
+          {attachments.map((att) => (
+            <Card
+              key={att.id}
+              style={styles.attachCard}
+              onPress={() => Linking.openURL(att.url).catch(() => {})}
+            >
+              <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={styles.attachIcon}>
+                  <Ionicons
+                    name={
+                      att.type === 'image'
+                        ? 'image'
+                        : att.type === 'video'
+                        ? 'videocam'
+                        : att.type === 'link'
+                        ? 'link'
+                        : 'document'
+                    }
+                    size={20}
+                    color={colors.primaryDark}
+                  />
+                </View>
+                <Text style={styles.attachName} numberOfLines={1}>
+                  {att.name ?? att.url}
+                </Text>
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={18}
+                  color={colors.mutedText}
+                />
+              </View>
+            </Card>
+          ))}
+        </>
+      ) : null}
 
       {evaluation ? (
         /* ---------------- Locked, approved report ---------------- */
@@ -213,6 +260,17 @@ export default function EvaluateScreen() {
 const styles = StyleSheet.create({
   achTitle: { fontSize: 18, fontWeight: '900', color: colors.textDark },
   achDesc: { fontSize: 14, color: colors.mutedText, marginTop: spacing.sm, lineHeight: 20 },
+  attachCard: { marginBottom: spacing.sm, paddingVertical: spacing.md },
+  attachRow: { alignItems: 'center', gap: spacing.md },
+  attachIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.softBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachName: { flex: 1, fontSize: 14, color: colors.textDark },
   section: { marginTop: spacing.lg, gap: spacing.md },
   label: { fontSize: 14, fontWeight: '600', color: colors.textDark },
   starsRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
