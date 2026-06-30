@@ -49,7 +49,9 @@ export default function ReportScreen() {
 
   const today = formatDate(new Date().toISOString(), language);
 
-  const buildHtml = () => {
+  // The report markup (styles + content) — wrapped for native print, or used
+  // directly to render a PDF on web.
+  const buildBody = () => {
     const rows = achievements
       .map(
         (a, i) => `
@@ -68,12 +70,9 @@ export default function ReportScreen() {
         : '—';
 
     return `
-    <!DOCTYPE html>
-    <html dir="${isRTL ? 'rtl' : 'ltr'}" lang="${isRTL ? 'ar' : 'en'}">
-    <head><meta charset="utf-8" />
     <style>
       * { font-family: -apple-system, "Segoe UI", Tahoma, sans-serif; }
-      body { padding: 32px; color: #1F2937; }
+      .report { padding: 32px; color: #1F2937; background:#fff; }
       .head { display:flex; align-items:center; gap:12px; border-bottom:3px solid #F4B000; padding-bottom:16px; }
       .title { font-size:24px; font-weight:800; }
       .sub { color:#6B7280; font-size:13px; margin-top:4px; }
@@ -83,9 +82,8 @@ export default function ReportScreen() {
       th, td { border:1px solid #F3E2B3; padding:10px; text-align:${isRTL ? 'right' : 'left'}; font-size:13px; }
       th { background:#FFF8E6; color:#1F2937; }
       .summary { margin-top:24px; background:#FFF8E6; border-radius:12px; padding:16px; }
-      .badge { display:inline-block; background:#F4B000; color:#fff; padding:4px 12px; border-radius:999px; font-size:12px; }
-    </style></head>
-    <body>
+    </style>
+    <div class="report">
       <div class="head">
         <div>
           <div class="title">${t('appName')} — ${t('myReport')}</div>
@@ -109,8 +107,12 @@ export default function ReportScreen() {
         <div><b>${t('evaluation')} (${t('rating')}):</b> ${avgRating} / 5</div>
       </div>
       <p style="margin-top:32px; color:#6B7280; font-size:12px; text-align:center;">${t('developedBy')}</p>
-    </body></html>`;
+    </div>`;
   };
+
+  // Full HTML document (used for native printing).
+  const buildHtml = () =>
+    `<!DOCTYPE html><html dir="${isRTL ? 'rtl' : 'ltr'}" lang="${isRTL ? 'ar' : 'en'}"><head><meta charset="utf-8" /></head><body>${buildBody()}</body></html>`;
 
   const statusLabel = (s: Achievement['status']) =>
     s === 'approved'
@@ -132,20 +134,30 @@ export default function ReportScreen() {
     }
   };
 
-  // Share the report (as a PDF) through the device's share sheet.
+  // Share the report as a PDF document through the device's share sheet.
   const onShare = async () => {
     setSharing(true);
     try {
       if (Platform.OS === 'web') {
-        // Web: use the Web Share API when available, else fall back to print.
+        // Web: build a real PDF, then share it as a file or download it.
+        const { htmlToPdfBlob } = await import('@/lib/webpdf');
+        const blob = await htmlToPdfBlob(buildBody());
+        const fileName = `enjazaty-report-${profile?.user_code ?? ''}.pdf`;
         const nav: any = typeof navigator !== 'undefined' ? navigator : undefined;
-        if (nav?.share) {
-          await nav.share({
-            title: t('myReport'),
-            text: `${t('reportFor')} ${profile?.full_name ?? ''}`,
-          });
+        const file =
+          typeof File !== 'undefined'
+            ? new File([blob], fileName, { type: 'application/pdf' })
+            : null;
+        if (file && nav?.canShare && nav.canShare({ files: [file] })) {
+          await nav.share({ files: [file], title: t('myReport') });
         } else {
-          await onPrint();
+          // Fallback: download the PDF.
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
         }
         return;
       }
