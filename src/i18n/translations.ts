@@ -260,6 +260,28 @@ export const translations = {
     clear: 'مسح',
     signatureRequired: 'التوقيع مطلوب',
 
+    // Saved signatures library
+    signatures: 'التواقيع',
+    mySignatures: 'تواقيعي',
+    savedSignatures: 'التواقيع المحفوظة',
+    newSignature: 'توقيع جديد',
+    saveSignature: 'حفظ التوقيع',
+    drawNew: 'رسم جديد',
+    useSaved: 'توقيع محفوظ',
+    noSignatures: 'لا توجد تواقيع محفوظة',
+    signatureName: 'اسم التوقيع (اختياري)',
+    selectSignature: 'اختر توقيعاً',
+    signaturesHint: 'أنشئ تواقيعك بالإصبع أو القلم لاستخدامها في الاعتماد',
+
+    // Document markup / approval
+    signDocument: 'اعتماد بالتوقيع',
+    approveDocument: 'اعتماد المستند',
+    approve: 'اعتماد',
+    dragToPlace: 'حرّك التوقيع، واستخدم المقبض للتكبير والتدوير',
+    saving_doc: 'جاري الاعتماد...',
+    pdfSignNote: 'اعتماد ملفات PDF قيد التطوير — يمكنك اعتماد الصور حالياً',
+    signedDocument: 'مستند موقّع',
+
     // Folder employees
     folderEmployees: 'الموظفون في المجلد',
   },
@@ -492,6 +514,26 @@ export const translations = {
     drawSignature: 'Sign here',
     clear: 'Clear',
     signatureRequired: 'Signature is required',
+
+    signatures: 'Signatures',
+    mySignatures: 'My signatures',
+    savedSignatures: 'Saved signatures',
+    newSignature: 'New signature',
+    saveSignature: 'Save signature',
+    drawNew: 'Draw new',
+    useSaved: 'Saved signature',
+    noSignatures: 'No saved signatures',
+    signatureName: 'Signature name (optional)',
+    selectSignature: 'Select a signature',
+    signaturesHint: 'Create signatures with finger or pen to use when approving',
+
+    signDocument: 'Sign & approve',
+    approveDocument: 'Approve document',
+    approve: 'Approve',
+    dragToPlace: 'Drag the signature; use the handle to resize and rotate',
+    saving_doc: 'Approving...',
+    pdfSignNote: 'PDF signing is coming soon — you can sign images now',
+    signedDocument: 'Signed document',
 
     folderEmployees: 'Employees in folder',
   },

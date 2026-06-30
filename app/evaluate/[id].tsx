@@ -21,7 +21,7 @@ import {
   Loading,
   Screen,
   SectionTitle,
-  SignaturePad,
+  SignatureChooser,
   SignatureView,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
@@ -233,7 +233,7 @@ export default function EvaluateScreen() {
           <Text style={[styles.label, { textAlign: isRTL ? 'right' : 'left' }]}>
             {t('eSignature')}
           </Text>
-          <SignaturePad onChange={setSignaturePaths} />
+          <SignatureChooser onChange={setSignaturePaths} />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

@@ -15,6 +15,7 @@ import type {
   Folder,
   Note,
   NoteType,
+  Signature,
   Supervision,
   UserProfile,
 } from '@/types/database';
@@ -416,6 +417,42 @@ export async function createEvaluation(input: {
     .update({ status: 'approved', updated_at: new Date().toISOString() })
     .eq('id', input.achievement_id);
   return data as Evaluation;
+}
+
+/* ------------------------------ Signatures ------------------------------- */
+
+export async function listSignatures(userId: string): Promise<Signature[]> {
+  const { data, error } = await supabase
+    .from('signatures')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Signature[];
+}
+
+export async function createSignature(input: {
+  user_id: string;
+  name?: string | null;
+  data: string;
+}): Promise<Signature> {
+  const { data, error } = await supabase
+    .from('signatures')
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as Signature;
+}
+
+export async function renameSignature(id: string, name: string): Promise<void> {
+  const { error } = await supabase.from('signatures').update({ name }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteSignature(id: string): Promise<void> {
+  const { error } = await supabase.from('signatures').delete().eq('id', id);
+  if (error) throw error;
 }
 
 /* ------------------------------ Contact us ------------------------------- */

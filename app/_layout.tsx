@@ -41,6 +41,8 @@ export default function RootLayout() {
               <Stack.Screen name="terms" />
               <Stack.Screen name="contact" />
               <Stack.Screen name="report" />
+              <Stack.Screen name="signatures" />
+              <Stack.Screen name="sign" />
             </Stack>
           </AuthProvider>
         </LanguageProvider>

@@ -13,4 +13,5 @@ export { Select } from './Select';
 export type { SelectOption } from './Select';
 export { SignaturePad } from './SignaturePad';
 export { SignatureView } from './SignatureView';
+export { SignatureChooser } from './SignatureChooser';
 export { AchievementRow } from './AchievementRow';

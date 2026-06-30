@@ -139,6 +139,15 @@ export interface AppNotification {
   created_at: string;
 }
 
+/** signatures — a user's reusable saved signatures (serialized SVG paths). */
+export interface Signature {
+  id: string;
+  user_id: string;
+  name: string | null;
+  data: string; // JSON array of SVG path strings
+  created_at: string;
+}
+
 /** Convenience type describing the whole DB for the Supabase client. */
 export interface Database {
   public: {
