@@ -397,6 +397,17 @@ export async function createEvaluation(input: {
   return data as Evaluation;
 }
 
+/* ------------------------------ Contact us ------------------------------- */
+
+export async function createContactMessage(input: {
+  user_id: string;
+  email: string;
+  message: string;
+}): Promise<void> {
+  const { error } = await supabase.from('contact_messages').insert(input);
+  if (error) throw error;
+}
+
 /* ------------------------------ Supervisions ----------------------------- */
 
 /** Supervisors (members) who can view the given user's page. */

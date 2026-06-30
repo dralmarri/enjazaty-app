@@ -8,9 +8,10 @@
  *  - Logout
  */
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import { Avatar, Badge, Button, Card, Header, Screen, SectionTitle } from '@/components';
@@ -22,11 +23,26 @@ import type { Language } from '@/i18n/translations';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function AccountScreen() {
-  const { profile, isAdmin, signOut, refreshProfile } = useAuth();
+  const { profile, isAdmin, signOut, deleteAccount, refreshProfile } = useAuth();
   const { t, language, setLanguage, isRTL } = useLanguage();
   const [loggingOut, setLoggingOut] = useState(false);
   const [copied, setCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+
+  const onDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      setConfirmDelete(false);
+      router.replace('/language');
+    } catch {
+      setDeleting(false);
+    }
+  };
 
   const onCopyId = async () => {
     if (!profile?.user_code) return;
@@ -152,19 +168,37 @@ export default function AccountScreen() {
         })}
       </View>
 
-      {/* Privacy */}
-      <SectionTitle title={t('privacy')} />
-      <Card onPress={() => router.push('/privacy')}>
+      {/* About the app */}
+      <SectionTitle title={t('aboutApp')} />
+      <Card>
+        <AboutRow
+          icon="document-text-outline"
+          label={t('termsOfUse')}
+          isRTL={isRTL}
+          border
+          onPress={() => router.push('/terms')}
+        />
+        <AboutRow
+          icon="shield-outline"
+          label={t('privacyPolicy')}
+          isRTL={isRTL}
+          border
+          onPress={() => router.push('/privacy')}
+        />
+        <AboutRow
+          icon="mail-outline"
+          label={t('contactUs')}
+          isRTL={isRTL}
+          border
+          onPress={() => router.push('/contact')}
+        />
+        {/* Version (no chevron) */}
         <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <View style={[styles.infoLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="lock-closed-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.infoLabel}>{t('privacy')}</Text>
+            <Ionicons name="information-circle-outline" size={18} color={colors.primaryDark} />
+            <Text style={styles.infoLabel}>{t('version')}</Text>
           </View>
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={18}
-            color={colors.mutedText}
-          />
+          <Text style={styles.infoValue}>{appVersion}</Text>
         </View>
       </Card>
 
@@ -177,10 +211,86 @@ export default function AccountScreen() {
         style={{ marginTop: spacing.xl }}
       />
 
+      {/* Delete account */}
+      <Pressable
+        onPress={() => setConfirmDelete(true)}
+        style={[styles.deleteRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+        hitSlop={8}
+      >
+        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+        <Text style={styles.deleteText}>{t('deleteAccount')}</Text>
+      </Pressable>
+
       {/* Credit */}
       <Text style={styles.credit}>{t('developedBy')}</Text>
       <Text style={styles.creditEn}>Developed by Hanadi Almarri</Text>
+
+      {/* Delete confirmation */}
+      <Modal
+        visible={confirmDelete}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmDelete(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setConfirmDelete(false)}>
+          <Pressable style={styles.confirmSheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.warnCircle}>
+              <Ionicons name="warning-outline" size={32} color={colors.danger} />
+            </View>
+            <Text style={styles.confirmTitle}>{t('deleteAccount')}</Text>
+            <Text style={styles.confirmBody}>{t('deleteAccountConfirm')}</Text>
+            <Button
+              title={deleting ? t('loading') : t('deleteAccount')}
+              variant="danger"
+              icon="trash-outline"
+              onPress={onDeleteAccount}
+              loading={deleting}
+            />
+            <Button
+              title={t('cancel')}
+              variant="outline"
+              onPress={() => setConfirmDelete(false)}
+              style={{ marginTop: spacing.sm }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
+  );
+}
+
+function AboutRow({
+  icon,
+  label,
+  isRTL,
+  border,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  isRTL: boolean;
+  border?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.infoRow,
+        border && styles.infoBorder,
+        { flexDirection: isRTL ? 'row-reverse' : 'row' },
+      ]}
+    >
+      <View style={[styles.infoLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+        <Ionicons name={icon} size={18} color={colors.primaryDark} />
+        <Text style={styles.infoLabel}>{label}</Text>
+      </View>
+      <Ionicons
+        name={isRTL ? 'chevron-back' : 'chevron-forward'}
+        size={18}
+        color={colors.mutedText}
+      />
+    </Pressable>
   );
 }
 
@@ -260,6 +370,42 @@ const styles = StyleSheet.create({
   langChipActive: { borderColor: colors.primary, backgroundColor: colors.softBackground },
   langText: { fontSize: 14, fontWeight: '700', color: colors.mutedText },
   langTextActive: { color: colors.primaryDark },
+  deleteRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  deleteText: { color: colors.danger, fontWeight: '700', fontSize: 14 },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  confirmSheet: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  warnCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  confirmTitle: { fontSize: 18, fontWeight: '900', color: colors.textDark, marginBottom: spacing.sm },
+  confirmBody: {
+    fontSize: 14,
+    color: colors.mutedText,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.lg,
+  },
   credit: {
     textAlign: 'center',
     marginTop: spacing.xl,

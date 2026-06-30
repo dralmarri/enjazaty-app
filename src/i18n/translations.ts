@@ -221,6 +221,27 @@ export const translations = {
     moveTo: 'نقل إلى',
     deleteFolderConfirm: 'حذف هذا المجلد؟',
     longPressHint: 'اضغط مطولاً على المجلد للتعديل',
+
+    // About app
+    aboutApp: 'حول التطبيق',
+    termsOfUse: 'شروط الاستخدام',
+    privacyPolicy: 'سياسة الخصوصية',
+    contactUs: 'تواصل معنا',
+    version: 'الإصدار',
+
+    // Contact form
+    contactHeader: 'نسعد بتواصلكم',
+    contactDesc:
+      'شاركنا اقتراحاتك أو ملاحظاتك حول تطبيق إنجازاتي. نقرأ كل رسالة ونحرص على الرد في أقرب وقت.',
+    yourSuggestion: 'اقتراحك أو ملاحظتك',
+    writeMessageHere: 'اكتب رسالتك هنا...',
+    send: 'إرسال',
+    messageSent: 'تم إرسال رسالتك، شكراً لك!',
+
+    // Delete account
+    deleteAccount: 'حذف الحساب',
+    deleteAccountConfirm:
+      'هل أنت متأكد من حذف حسابك؟ سيتم حذف جميع بياناتك نهائياً ولا يمكن التراجع.',
   },
 
   en: {
@@ -418,6 +439,24 @@ export const translations = {
     moveTo: 'Move to',
     deleteFolderConfirm: 'Delete this folder?',
     longPressHint: 'Long-press a folder to edit',
+
+    aboutApp: 'About the app',
+    termsOfUse: 'Terms of Use',
+    privacyPolicy: 'Privacy Policy',
+    contactUs: 'Contact us',
+    version: 'Version',
+
+    contactHeader: 'We love to hear from you',
+    contactDesc:
+      'Share your suggestions or feedback about Enjazaty. We read every message and reply as soon as we can.',
+    yourSuggestion: 'Your suggestion or feedback',
+    writeMessageHere: 'Write your message here...',
+    send: 'Send',
+    messageSent: 'Your message has been sent, thank you!',
+
+    deleteAccount: 'Delete account',
+    deleteAccountConfirm:
+      'Are you sure you want to delete your account? All your data will be permanently deleted and cannot be recovered.',
   },
 } as const;
 

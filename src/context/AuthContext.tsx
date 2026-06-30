@@ -44,6 +44,8 @@ interface AuthContextValue {
   resendOtp: (email: string) => Promise<void>;
   completeProfile: (params: CompleteProfileParams) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Permanently delete the account + all data, then sign out. */
+  deleteAccount: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -182,6 +184,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    // Server-side RPC removes the profile (cascading all data) + the login.
+    const { error } = await supabase.rpc('delete_my_account');
+    if (error) throw error;
+    await supabase.auth.signOut();
+    setProfile(null);
+    setSession(null);
+  }, []);
+
   const refreshProfile = useCallback(async () => {
     if (session?.user) await loadProfile(session.user.id);
   }, [session, loadProfile]);
@@ -200,6 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resendOtp,
       completeProfile,
       signOut,
+      deleteAccount,
       refreshProfile,
     }),
     [
@@ -212,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       resendOtp,
       completeProfile,
       signOut,
+      deleteAccount,
       refreshProfile,
     ]
   );

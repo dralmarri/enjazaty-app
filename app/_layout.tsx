@@ -38,6 +38,8 @@ export default function RootLayout() {
               <Stack.Screen name="edit-profile" />
               <Stack.Screen name="notifications" />
               <Stack.Screen name="privacy" />
+              <Stack.Screen name="terms" />
+              <Stack.Screen name="contact" />
             </Stack>
           </AuthProvider>
         </LanguageProvider>
