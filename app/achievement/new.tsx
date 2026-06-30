@@ -131,10 +131,11 @@ export default function NewAchievementScreen() {
   };
 
   // Route params: ?source opens a picker (library/camera/files),
-  // ?folder pre-selects a folder.
-  const { source, folder: folderParam } = useLocalSearchParams<{
+  // ?folder pre-selects a folder, ?owner creates it in another user's space.
+  const { source, folder: folderParam, owner } = useLocalSearchParams<{
     source?: string;
     folder?: string;
+    owner?: string;
   }>();
   const autoOpened = useRef(false);
   useEffect(() => {
@@ -171,18 +172,24 @@ export default function NewAchievementScreen() {
     }
     setSaving(true);
     try {
+      // When ?owner is set, an admin/supervisor is adding this into the
+      // employee's workspace (owned by the employee).
+      const ownerId = owner ?? profile.id;
+      const onBehalf = ownerId !== profile.id;
+
       // 1) Create the achievement.
       const achievement = await createAchievement({
         title: title.trim(),
         description: description.trim() || null,
-        owner_id: profile.id,
+        owner_id: ownerId,
         folder_id: folderId,
         department_id: profile.department_id,
         date: new Date().toISOString(),
         status: 'submitted',
       });
 
-      // 2) Upload + persist each attachment.
+      // 2) Upload + persist each attachment (files live under the uploader's
+      // storage folder, but the attachment is owned by the achievement owner).
       for (const att of attachments) {
         let finalUrl = att.url;
         if (!att.isRemote) {
@@ -200,23 +207,34 @@ export default function NewAchievementScreen() {
           url: finalUrl,
           name: att.name,
           mime_type: att.mimeType ?? null,
-          owner_id: profile.id,
+          owner_id: ownerId,
         });
       }
 
-      // 3) Notify every supervisor (member) about the new submission.
-      const members = await listMembers(profile.id);
-      await Promise.all(
-        members.map((m) =>
-          createNotification({
-            user_id: m.id,
-            title: t('addAchievement'),
-            body: `${profile.full_name}: ${title.trim()}`,
-            type: 'achievement',
-            related_id: achievement.id,
-          })
-        )
-      );
+      // 3) Notify: if added on behalf of an employee, notify that employee;
+      // otherwise notify the user's supervisors (members).
+      if (onBehalf) {
+        await createNotification({
+          user_id: ownerId,
+          title: t('addAchievement'),
+          body: title.trim(),
+          type: 'achievement',
+          related_id: achievement.id,
+        });
+      } else {
+        const members = await listMembers(profile.id);
+        await Promise.all(
+          members.map((m) =>
+            createNotification({
+              user_id: m.id,
+              title: t('addAchievement'),
+              body: `${profile.full_name}: ${title.trim()}`,
+              type: 'achievement',
+              related_id: achievement.id,
+            })
+          )
+        );
+      }
 
       router.replace(`/achievement/${achievement.id}`);
     } catch (e: any) {

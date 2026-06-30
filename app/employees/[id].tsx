@@ -5,7 +5,7 @@
  * the notes & evaluation screen.
  */
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
@@ -31,6 +31,7 @@ export default function EmployeeProfileScreen() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addMenu, setAddMenu] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -67,7 +68,12 @@ export default function EmployeeProfileScreen() {
 
   return (
     <Screen>
-      <Header title={t('employeeProfile')} showBack />
+      <Header
+        title={t('employeeProfile')}
+        showBack
+        rightIcon="add-circle"
+        onRightPress={() => setAddMenu(true)}
+      />
 
       {/* Identity card */}
       <Card style={styles.idCard}>
@@ -138,11 +144,69 @@ export default function EmployeeProfileScreen() {
           </Card>
         ))
       )}
+
+      {/* Add into the employee's workspace: folder or achievement */}
+      <Modal visible={addMenu} transparent animationType="fade" onRequestClose={() => setAddMenu(false)}>
+        <Pressable style={styles.backdrop} onPress={() => setAddMenu(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{employee.full_name}</Text>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                setAddMenu(false);
+                router.push(`/folder/new?owner=${id}`);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="folder-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('newFolder')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                setAddMenu(false);
+                router.push(`/achievement/new?owner=${id}&source=files`);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="document-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('addAchievementType')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.textDark,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  menuRow: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  menuIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.softBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: { fontSize: 16, fontWeight: '600', color: colors.textDark },
   idCard: { alignItems: 'center', gap: spacing.sm },
   name: { fontSize: 20, fontWeight: '900', color: colors.textDark, marginTop: spacing.sm },
   job: { fontSize: 14, color: colors.mutedText, marginBottom: spacing.xs },

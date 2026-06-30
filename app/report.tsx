@@ -4,10 +4,11 @@
  * (uses expo-print, which works on web + native).
  */
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { Badge, Button, Card, Header, Loading, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -23,6 +24,7 @@ export default function ReportScreen() {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [printing, setPrinting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -130,6 +132,38 @@ export default function ReportScreen() {
     }
   };
 
+  // Share the report (as a PDF) through the device's share sheet.
+  const onShare = async () => {
+    setSharing(true);
+    try {
+      if (Platform.OS === 'web') {
+        // Web: use the Web Share API when available, else fall back to print.
+        const nav: any = typeof navigator !== 'undefined' ? navigator : undefined;
+        if (nav?.share) {
+          await nav.share({
+            title: t('myReport'),
+            text: `${t('reportFor')} ${profile?.full_name ?? ''}`,
+          });
+        } else {
+          await onPrint();
+        }
+        return;
+      }
+      // Native: render a PDF then open the share sheet.
+      const { uri } = await Print.printToFileAsync({ html: buildHtml() });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: t('myReport'),
+        });
+      }
+    } catch {
+      // user cancelled or unsupported
+    } finally {
+      setSharing(false);
+    }
+  };
+
   if (loading) return <Loading />;
 
   return (
@@ -157,13 +191,25 @@ export default function ReportScreen() {
         </View>
       </Card>
 
-      <Button
-        title={printing ? t('loading') : t('printReport')}
-        icon="print-outline"
-        onPress={onPrint}
-        loading={printing}
-        style={{ marginVertical: spacing.lg }}
-      />
+      <View style={styles.actions}>
+        <Button
+          title={printing ? t('loading') : t('printReport')}
+          icon="print-outline"
+          onPress={onPrint}
+          loading={printing}
+          fullWidth={false}
+          style={styles.actionBtn}
+        />
+        <Button
+          title={sharing ? t('loading') : t('share')}
+          icon="share-social-outline"
+          variant="secondary"
+          onPress={onShare}
+          loading={sharing}
+          fullWidth={false}
+          style={styles.actionBtn}
+        />
+      </View>
 
       {/* Achievements preview list */}
       {achievements.map((a, i) => (
@@ -202,6 +248,8 @@ function escapeHtml(s: string): string {
 }
 
 const styles = StyleSheet.create({
+  actions: { flexDirection: 'row', gap: spacing.md, marginVertical: spacing.lg },
+  actionBtn: { flex: 1 },
   summaryCard: { gap: spacing.xs },
   row: { alignItems: 'center', gap: spacing.md },
   name: { fontSize: 18, fontWeight: '900', color: colors.textDark },

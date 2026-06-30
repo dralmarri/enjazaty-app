@@ -15,7 +15,8 @@ export default function NewFolderScreen() {
   const { profile } = useAuth();
   const { t } = useLanguage();
   // ?parent = create this folder INSIDE another folder (a sub-folder).
-  const { parent } = useLocalSearchParams<{ parent?: string }>();
+  // ?owner  = create it inside another user's (employee's) workspace.
+  const { parent, owner } = useLocalSearchParams<{ parent?: string; owner?: string }>();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -32,7 +33,7 @@ export default function NewFolderScreen() {
       await createFolder({
         name: name.trim(),
         description: description.trim() || null,
-        owner_id: profile.id,
+        owner_id: owner ?? profile.id,
         parent_id: parent ?? null,
       });
       router.back();
