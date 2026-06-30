@@ -21,6 +21,8 @@ import {
   Loading,
   Screen,
   SectionTitle,
+  SignaturePad,
+  SignatureView,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -50,7 +52,7 @@ export default function EvaluateScreen() {
   // Form state
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
-  const [signature, setSignature] = useState('');
+  const [signaturePaths, setSignaturePaths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -93,11 +95,10 @@ export default function EvaluateScreen() {
     );
   }
 
-  // Pre-fill the signature with the supervisor's full name as a convenience.
   const onSubmit = async () => {
     setError(null);
-    if (!signature.trim()) {
-      setError(t('signHint'));
+    if (signaturePaths.length === 0) {
+      setError(t('signatureRequired'));
       return;
     }
     setSubmitting(true);
@@ -108,7 +109,8 @@ export default function EvaluateScreen() {
         evaluator_id: profile.id,
         rating,
         comment: comment.trim() || null,
-        signature: signature.trim(),
+        // Store the hand-drawn signature as serialized SVG paths.
+        signature: JSON.stringify(signaturePaths),
       });
       // Notify the subordinate that their work was evaluated/approved.
       await createNotification({
@@ -203,7 +205,7 @@ export default function EvaluateScreen() {
           {evaluation.signature ? (
             <View style={styles.signBox}>
               <Text style={styles.signLabel}>{t('eSignature')}</Text>
-              <Text style={styles.signValue}>✍️ {evaluation.signature}</Text>
+              <SignatureView value={evaluation.signature} />
             </View>
           ) : null}
           <Text style={styles.date}>{formatDate(evaluation.created_at, language)}</Text>
@@ -228,12 +230,10 @@ export default function EvaluateScreen() {
 
           <Input label={t('comment')} value={comment} onChangeText={setComment} multiline />
 
-          <Input
-            label={t('eSignature')}
-            value={signature}
-            onChangeText={setSignature}
-            placeholder={t('signHint')}
-          />
+          <Text style={[styles.label, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('eSignature')}
+          </Text>
+          <SignaturePad onChange={setSignaturePaths} />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 

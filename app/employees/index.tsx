@@ -27,6 +27,7 @@ import {
   listFolders,
   listSupervisions,
   removeSupervision,
+  updateSupervisionPlacement,
 } from '@/lib/api';
 import type { Folder, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
@@ -46,6 +47,12 @@ export default function EmployeesScreen() {
   const [placement, setPlacement] = useState<string>('workspace'); // 'workspace' | folderId
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Long-press employee actions.
+  const [empMenu, setEmpMenu] = useState<(Supervision & { subordinate: UserProfile }) | null>(null);
+  const [empMoveMenu, setEmpMoveMenu] = useState<
+    (Supervision & { subordinate: UserProfile }) | null
+  >(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -122,6 +129,22 @@ export default function EmployeesScreen() {
     }
   };
 
+  const onMoveEmployee = async (
+    item: Supervision & { subordinate: UserProfile },
+    placementValue: string
+  ) => {
+    try {
+      await updateSupervisionPlacement(
+        item.id,
+        placementValue === 'workspace' ? 'workspace' : 'folder',
+        placementValue === 'workspace' ? null : placementValue
+      );
+      await load();
+    } catch {
+      // ignore
+    }
+  };
+
   const folderName = (id: string | null) =>
     folders.find((f) => f.id === id)?.name ?? t('placeInWorkspace');
 
@@ -142,6 +165,7 @@ export default function EmployeesScreen() {
             key={item.id}
             style={styles.card}
             onPress={() => router.push(`/employees/${item.subordinate.id}`)}
+            onLongPress={() => setEmpMenu(item)}
           >
             <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
               <Avatar name={item.subordinate.full_name} uri={item.subordinate.avatar_url} size={48} />
@@ -166,6 +190,80 @@ export default function EmployeesScreen() {
           </Card>
         ))
       )}
+
+      {/* Long-press employee actions: move / delete */}
+      <Modal
+        visible={!!empMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEmpMenu(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setEmpMenu(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{empMenu?.subordinate.full_name}</Text>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const it = empMenu;
+                setEmpMenu(null);
+                setEmpMoveMenu(it);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="swap-horizontal-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('moveTo')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const it = empMenu;
+                setEmpMenu(null);
+                if (it) onRemove(it.id);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="trash-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('delete')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Move employee to a placement */}
+      <Modal
+        visible={!!empMoveMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEmpMoveMenu(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setEmpMoveMenu(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{t('moveTo')}</Text>
+            {placementOptions.map((opt) => (
+              <Pressable
+                key={opt.value}
+                style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={() => {
+                  const it = empMoveMenu;
+                  setEmpMoveMenu(null);
+                  if (it) onMoveEmployee(it, opt.value);
+                }}
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons
+                    name={opt.value === 'workspace' ? 'home-outline' : 'folder-outline'}
+                    size={22}
+                    color={colors.primaryDark}
+                  />
+                </View>
+                <Text style={styles.menuLabel}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Add by User ID modal */}
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
@@ -259,4 +357,14 @@ const styles = StyleSheet.create({
   },
   foundCard: { marginBottom: spacing.lg },
   error: { color: colors.danger, textAlign: 'center', marginTop: spacing.sm },
+  menuRow: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
+  menuIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.softBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: { fontSize: 16, fontWeight: '600', color: colors.textDark },
 });

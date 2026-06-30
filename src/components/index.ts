@@ -11,3 +11,5 @@ export { Loading } from './Loading';
 export { SectionTitle } from './SectionTitle';
 export { Select } from './Select';
 export type { SelectOption } from './Select';
+export { SignaturePad } from './SignaturePad';
+export { SignatureView } from './SignatureView';

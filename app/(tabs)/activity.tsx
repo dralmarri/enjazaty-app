@@ -118,6 +118,24 @@ export default function ActivityScreen() {
         </View>
       ) : null}
 
+      {/* Generate / print a report */}
+      <Pressable style={styles.reportCard} onPress={() => router.push('/report')}>
+        <View style={[styles.reportRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={styles.reportIcon}>
+            <Ionicons name="document-text-outline" size={22} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reportTitle}>{t('myReport')}</Text>
+            <Text style={styles.reportHint}>{t('printReport')}</Text>
+          </View>
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={20}
+            color={colors.mutedText}
+          />
+        </View>
+      </Pressable>
+
       {/* Evaluation reports received from supervisors */}
       {evaluations.length > 0 ? (
         <>
@@ -240,6 +258,26 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   analyticsText: { fontSize: 14, fontWeight: '700', color: colors.textDark },
+  reportCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadow,
+  },
+  reportRow: { alignItems: 'center', gap: spacing.md },
+  reportIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.softBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reportTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
+  reportHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
   evalCard: { marginBottom: spacing.md, gap: spacing.sm },
   evalTop: { alignItems: 'center', justifyContent: 'space-between' },
   starsRow: { flexDirection: 'row', gap: 2 },

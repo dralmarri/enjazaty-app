@@ -8,14 +8,17 @@ import { colors, radius, shadow, spacing } from '@/theme/colors';
 interface CardProps {
   children: React.ReactNode;
   onPress?: () => void;
+  onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
-export function Card({ children, onPress, style }: CardProps) {
-  if (onPress) {
+export function Card({ children, onPress, onLongPress, style }: CardProps) {
+  if (onPress || onLongPress) {
     return (
       <Pressable
         onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={350}
         style={({ pressed }) => [
           styles.card,
           style,

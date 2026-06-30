@@ -453,6 +453,33 @@ export async function removeSupervision(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Change where a supervised employee is classified (workspace or a folder). */
+export async function updateSupervisionPlacement(
+  id: string,
+  placement: 'workspace' | 'folder',
+  folderId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('supervisions')
+    .update({ placement, folder_id: placement === 'folder' ? folderId : null })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Employees the supervisor has classified into a specific folder. */
+export async function listSupervisionsByFolder(
+  supervisorId: string,
+  folderId: string
+): Promise<(Supervision & { subordinate: UserProfile })[]> {
+  const { data, error } = await supabase
+    .from('supervisions')
+    .select('*, subordinate:subordinate_id (*)')
+    .eq('supervisor_id', supervisorId)
+    .eq('folder_id', folderId);
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
 /** True when `supervisorId` supervises `subordinateId`. */
 export async function supervises(
   supervisorId: string,

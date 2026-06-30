@@ -25,11 +25,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   addSupervision,
+  deleteFolder,
   getFolder,
   getProfileByCode,
   listAchievementsByFolder,
   listChildFolders,
+  listFolders,
+  listSupervisionsByFolder,
+  updateFolderParent,
 } from '@/lib/api';
+import type { Supervision } from '@/types/database';
 import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, Folder, UserProfile } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
@@ -42,8 +47,15 @@ export default function FolderContentsScreen() {
   const [folder, setFolder] = useState<Folder | null>(null);
   const [subFolders, setSubFolders] = useState<Folder[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [folderEmployees, setFolderEmployees] = useState<
+    (Supervision & { subordinate: UserProfile })[]
+  >([]);
+  const [allFolders, setAllFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
   const [addMenu, setAddMenu] = useState(false);
+  // Sub-folder long-press editing.
+  const [subMenu, setSubMenu] = useState<Folder | null>(null);
+  const [subMoveMenu, setSubMoveMenu] = useState<Folder | null>(null);
 
   // Add-employee-to-this-folder modal state.
   const [empModal, setEmpModal] = useState(false);
@@ -64,16 +76,43 @@ export default function FolderContentsScreen() {
       setFolder(f);
       setSubFolders(subs);
       setAchievements(achs);
+      // Owner-only extras: employees classified here + folders for moving.
+      if (f && f.owner_id === profile?.id) {
+        const [emps, all] = await Promise.all([
+          listSupervisionsByFolder(profile.id, id),
+          listFolders(profile.id),
+        ]);
+        setFolderEmployees(emps);
+        setAllFolders(all);
+      }
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, profile?.id]);
 
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load])
   );
+
+  const onDeleteSub = async (folderId: string) => {
+    try {
+      await deleteFolder(folderId);
+      await load();
+    } catch {
+      // ignore
+    }
+  };
+
+  const onMoveSub = async (folderId: string, parentId: string | null) => {
+    try {
+      await updateFolderParent(folderId, parentId);
+      await load();
+    } catch {
+      // ignore
+    }
+  };
 
   const onLookupEmp = async () => {
     setEmpError(null);
@@ -105,6 +144,7 @@ export default function FolderContentsScreen() {
       setEmpModal(false);
       setEmpCode('');
       setEmpFound(null);
+      await load();
     } catch (e: any) {
       setEmpError(e?.message ?? t('error'));
     } finally {
@@ -136,6 +176,8 @@ export default function FolderContentsScreen() {
                 key={f.id}
                 style={styles.folderCard}
                 onPress={() => router.push(`/folder/${f.id}`)}
+                onLongPress={isOwner ? () => setSubMenu(f) : undefined}
+                delayLongPress={350}
               >
                 <Ionicons name="folder" size={26} color={colors.primary} />
                 <Text style={styles.folderName} numberOfLines={1}>
@@ -144,6 +186,36 @@ export default function FolderContentsScreen() {
               </Pressable>
             ))}
           </View>
+          {isOwner ? <Text style={styles.hint}>{t('longPressHint')}</Text> : null}
+        </>
+      ) : null}
+
+      {/* Employees classified into this folder */}
+      {folderEmployees.length > 0 ? (
+        <>
+          <SectionTitle title={t('folderEmployees')} />
+          {folderEmployees.map((it) => (
+            <Card
+              key={it.id}
+              style={styles.card}
+              onPress={() => router.push(`/employees/${it.subordinate.id}`)}
+            >
+              <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Avatar name={it.subordinate.full_name} uri={it.subordinate.avatar_url} size={40} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {it.subordinate.full_name}
+                  </Text>
+                  <Text style={styles.date}>{it.subordinate.user_code}</Text>
+                </View>
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={18}
+                  color={colors.mutedText}
+                />
+              </View>
+            </Card>
+          ))}
         </>
       ) : null}
 
@@ -279,6 +351,81 @@ export default function FolderContentsScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Sub-folder long-press: move / delete */}
+      <Modal visible={!!subMenu} transparent animationType="fade" onRequestClose={() => setSubMenu(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setSubMenu(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{subMenu?.name}</Text>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = subMenu;
+                setSubMenu(null);
+                setSubMoveMenu(f);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="swap-horizontal-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('moveTo')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = subMenu;
+                setSubMenu(null);
+                if (f) onDeleteSub(f.id);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="trash-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('delete')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Move sub-folder: workspace root, this folder's parent area, or another folder */}
+      <Modal visible={!!subMoveMenu} transparent animationType="fade" onRequestClose={() => setSubMoveMenu(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setSubMoveMenu(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{t('moveTo')}</Text>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = subMoveMenu;
+                setSubMoveMenu(null);
+                if (f) onMoveSub(f.id, null);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="home-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('placeInWorkspace')}</Text>
+            </Pressable>
+            {allFolders
+              .filter((f) => f.id !== subMoveMenu?.id)
+              .map((f) => (
+                <Pressable
+                  key={f.id}
+                  style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  onPress={() => {
+                    const src = subMoveMenu;
+                    setSubMoveMenu(null);
+                    if (src) onMoveSub(src.id, f.id);
+                  }}
+                >
+                  <View style={styles.menuIcon}>
+                    <Ionicons name="folder-outline" size={22} color={colors.primaryDark} />
+                  </View>
+                  <Text style={styles.menuLabel}>{f.name}</Text>
+                </Pressable>
+              ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -299,6 +446,7 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   folderName: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textDark },
+  hint: { fontSize: 11, color: colors.mutedText, marginTop: spacing.xs, textAlign: 'center' },
   card: { marginBottom: spacing.md },
   row: { alignItems: 'center', gap: spacing.md },
   iconBox: {

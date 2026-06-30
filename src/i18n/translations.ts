@@ -242,6 +242,23 @@ export const translations = {
     deleteAccount: 'حذف الحساب',
     deleteAccountConfirm:
       'هل أنت متأكد من حذف حسابك؟ سيتم حذف جميع بياناتك نهائياً ولا يمكن التراجع.',
+
+    // Reports
+    reports: 'التقارير',
+    myReport: 'تقرير إنجازاتي',
+    generateReport: 'إعداد تقرير',
+    printReport: 'طباعة التقرير',
+    reportFor: 'تقرير الإنجازات الخاص بـ',
+    reportDate: 'تاريخ التقرير',
+    noData: 'لا توجد بيانات',
+
+    // Signature pad
+    drawSignature: 'وقّع هنا',
+    clear: 'مسح',
+    signatureRequired: 'التوقيع مطلوب',
+
+    // Folder employees
+    folderEmployees: 'الموظفون في المجلد',
   },
 
   en: {
@@ -457,6 +474,20 @@ export const translations = {
     deleteAccount: 'Delete account',
     deleteAccountConfirm:
       'Are you sure you want to delete your account? All your data will be permanently deleted and cannot be recovered.',
+
+    reports: 'Reports',
+    myReport: 'My achievements report',
+    generateReport: 'Generate report',
+    printReport: 'Print report',
+    reportFor: 'Achievements report for',
+    reportDate: 'Report date',
+    noData: 'No data',
+
+    drawSignature: 'Sign here',
+    clear: 'Clear',
+    signatureRequired: 'Signature is required',
+
+    folderEmployees: 'Employees in folder',
   },
 } as const;
 
