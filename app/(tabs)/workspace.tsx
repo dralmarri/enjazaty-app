@@ -317,10 +317,10 @@ export default function WorkspaceScreen() {
                 if (f) onDeleteFolder(f.id);
               }}
             >
-              <View style={[styles.menuIcon, { backgroundColor: '#FEE2E2' }]}>
-                <Ionicons name="trash-outline" size={22} color={colors.danger} />
+              <View style={styles.menuIcon}>
+                <Ionicons name="trash-outline" size={22} color={colors.primaryDark} />
               </View>
-              <Text style={[styles.menuLabel, { color: colors.danger }]}>{t('delete')}</Text>
+              <Text style={styles.menuLabel}>{t('delete')}</Text>
             </Pressable>
           </Pressable>
         </Pressable>

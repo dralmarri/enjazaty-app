@@ -31,7 +31,11 @@ export default function AccountScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+  // Show major.minor only, e.g. "1.0".
+  const appVersion = (Constants.expoConfig?.version ?? '1.0.0')
+    .split('.')
+    .slice(0, 2)
+    .join('.');
 
   const onDeleteAccount = async () => {
     setDeleting(true);
@@ -204,7 +208,7 @@ export default function AccountScreen() {
 
       <Button
         title={t('logout')}
-        variant="danger"
+        variant="primary"
         icon="log-out-outline"
         onPress={onLogout}
         loading={loggingOut}
@@ -217,7 +221,7 @@ export default function AccountScreen() {
         style={[styles.deleteRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
         hitSlop={8}
       >
-        <Ionicons name="trash-outline" size={18} color={colors.danger} />
+        <Ionicons name="trash-outline" size={18} color={colors.primaryDark} />
         <Text style={styles.deleteText}>{t('deleteAccount')}</Text>
       </Pressable>
 
@@ -235,13 +239,13 @@ export default function AccountScreen() {
         <Pressable style={styles.backdrop} onPress={() => setConfirmDelete(false)}>
           <Pressable style={styles.confirmSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.warnCircle}>
-              <Ionicons name="warning-outline" size={32} color={colors.danger} />
+              <Ionicons name="warning-outline" size={32} color={colors.primaryDark} />
             </View>
             <Text style={styles.confirmTitle}>{t('deleteAccount')}</Text>
             <Text style={styles.confirmBody}>{t('deleteAccountConfirm')}</Text>
             <Button
               title={deleting ? t('loading') : t('deleteAccount')}
-              variant="danger"
+              variant="primary"
               icon="trash-outline"
               onPress={onDeleteAccount}
               loading={deleting}
@@ -376,7 +380,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.lg,
   },
-  deleteText: { color: colors.danger, fontWeight: '700', fontSize: 14 },
+  deleteText: { color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -393,7 +397,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.softBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,

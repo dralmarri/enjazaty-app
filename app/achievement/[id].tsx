@@ -221,7 +221,7 @@ export default function AchievementDetailsScreen() {
         {/* Owner can delete */}
         {isOwner ? (
           <Pressable onPress={onDelete} style={styles.deleteRow} hitSlop={8}>
-            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            <Ionicons name="trash-outline" size={18} color={colors.primaryDark} />
             <Text style={styles.deleteText}>{t('delete')}</Text>
           </Pressable>
         ) : null}
@@ -260,5 +260,5 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.lg,
   },
-  deleteText: { color: colors.danger, fontWeight: '700', fontSize: 14 },
+  deleteText: { color: colors.primaryDark, fontWeight: '700', fontSize: 14 },
 });
