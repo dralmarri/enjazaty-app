@@ -10,7 +10,7 @@
  * Note: PDF signing is not yet supported — images only for now.
  */
 import React, { useMemo, useReducer, useRef, useState } from 'react';
-import { Image, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Image, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { captureRef } from 'react-native-view-shot';
@@ -56,7 +56,11 @@ export default function SignScreen() {
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
           startRef.current = { ...box.current };
         },
@@ -76,7 +80,11 @@ export default function SignScreen() {
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
           startRef.current = { ...box.current };
         },
@@ -95,7 +103,11 @@ export default function SignScreen() {
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
           startRef.current = { ...box.current };
         },
@@ -175,7 +187,14 @@ export default function SignScreen() {
       ) : (
         <>
           {/* The captured canvas: image + signature overlay */}
-          <View ref={canvasRef} collapsable={false} style={styles.canvas}>
+          <View
+            ref={canvasRef}
+            collapsable={false}
+            style={[
+              styles.canvas,
+              Platform.OS === 'web' ? ({ touchAction: 'none' } as any) : null,
+            ]}
+          >
             {imageUrl ? (
               <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
             ) : null}

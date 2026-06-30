@@ -7,6 +7,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import {
   GestureResponderEvent,
   PanResponder,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -45,8 +46,14 @@ export function SignaturePad({ onChange, height = 180 }: SignaturePadProps) {
   const panResponder = useMemo(
     () =>
       PanResponder.create({
+        // Capture the gesture before any parent ScrollView so drawing doesn't
+        // scroll the page.
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
           const { locationX, locationY } = e.nativeEvent;
           currentRef.current = [{ x: locationX, y: locationY }];
@@ -80,9 +87,18 @@ export function SignaturePad({ onChange, height = 180 }: SignaturePadProps) {
     onChange([]);
   };
 
+  // On web, prevent the browser from scrolling / selecting while drawing.
+  const webNoScroll =
+    Platform.OS === 'web'
+      ? ({ touchAction: 'none', userSelect: 'none', cursor: 'crosshair' } as any)
+      : null;
+
   return (
     <View>
-      <View style={[styles.canvas, { height }]} {...panResponder.panHandlers}>
+      <View
+        style={[styles.canvas, { height }, webNoScroll]}
+        {...panResponder.panHandlers}
+      >
         <Svg width="100%" height="100%">
           {strokes.map((d, i) => (
             <Path key={i} d={d} stroke={colors.textDark} strokeWidth={2.5} fill="none" />
