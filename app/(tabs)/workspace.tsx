@@ -9,10 +9,12 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import {
+  AchievementRow,
   Avatar,
-  Badge,
+  Button,
   Card,
   EmptyState,
+  Input,
   Screen,
   SectionTitle,
 } from '@/components';
@@ -23,9 +25,10 @@ import {
   listAchievements,
   listNotifications,
   listRootFolders,
+  updateFolderName,
   updateFolderParent,
 } from '@/lib/api';
-import { formatDate, statusTone } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { Achievement, Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
@@ -41,6 +44,20 @@ export default function WorkspaceScreen() {
   // Long-press folder editing.
   const [folderMenu, setFolderMenu] = useState<Folder | null>(null);
   const [moveMenu, setMoveMenu] = useState<Folder | null>(null);
+  const [renameFolder, setRenameFolder] = useState<Folder | null>(null);
+  const [renameText, setRenameText] = useState('');
+
+  const onRenameFolder = useCallback(async () => {
+    if (!renameFolder || !renameText.trim()) return;
+    try {
+      await updateFolderName(renameFolder.id, renameText.trim());
+      setRenameFolder(null);
+      await load();
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renameFolder, renameText]);
 
   const onDeleteFolder = useCallback(
     async (folderId: string) => {
@@ -244,21 +261,13 @@ export default function WorkspaceScreen() {
         <EmptyState message={t('noAchievements')} hint={t('addAchievementType')} />
       ) : (
         achievements.slice(0, 5).map((item) => (
-          <Card
+          <AchievementRow
             key={item.id}
-            style={styles.achievementCard}
+            achievement={item}
+            editable
+            onChanged={load}
             onPress={() => router.push(`/achievement/${item.id}`)}
-          >
-            <View style={[styles.achRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.achTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.achDate}>{formatDate(item.created_at, language)}</Text>
-              </View>
-              <Badge label={t(item.status)} tone={statusTone(item.status)} />
-            </View>
-          </Card>
+          />
         ))
       )}
 
@@ -296,6 +305,22 @@ export default function WorkspaceScreen() {
         <Pressable style={styles.backdrop} onPress={() => setFolderMenu(null)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>{folderMenu?.name}</Text>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = folderMenu;
+                setFolderMenu(null);
+                if (f) {
+                  setRenameText(f.name);
+                  setRenameFolder(f);
+                }
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="create-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('rename')}</Text>
+            </Pressable>
             <Pressable
               style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               onPress={() => {
@@ -375,6 +400,30 @@ export default function WorkspaceScreen() {
                   <Text style={styles.menuLabel}>{f.name}</Text>
                 </Pressable>
               ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Rename folder */}
+      <Modal
+        visible={!!renameFolder}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRenameFolder(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setRenameFolder(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.sheetTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('rename')}
+            </Text>
+            <Input label={t('newName')} value={renameText} onChangeText={setRenameText} />
+            <Button title={t('save')} icon="checkmark" onPress={onRenameFolder} />
+            <Button
+              title={t('cancel')}
+              variant="outline"
+              onPress={() => setRenameFolder(null)}
+              style={{ marginTop: spacing.sm }}
+            />
           </Pressable>
         </Pressable>
       </Modal>

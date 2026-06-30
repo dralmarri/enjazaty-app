@@ -10,8 +10,8 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
+  AchievementRow,
   Avatar,
-  Badge,
   Button,
   Card,
   EmptyState,
@@ -32,11 +32,10 @@ import {
   listChildFolders,
   listFolders,
   listSupervisionsByFolder,
+  updateFolderName,
   updateFolderParent,
 } from '@/lib/api';
-import type { Supervision } from '@/types/database';
-import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Folder, UserProfile } from '@/types/database';
+import type { Achievement, Folder, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 export default function FolderContentsScreen() {
@@ -56,6 +55,8 @@ export default function FolderContentsScreen() {
   // Sub-folder long-press editing.
   const [subMenu, setSubMenu] = useState<Folder | null>(null);
   const [subMoveMenu, setSubMoveMenu] = useState<Folder | null>(null);
+  const [subRename, setSubRename] = useState<Folder | null>(null);
+  const [subRenameText, setSubRenameText] = useState('');
 
   // Add-employee-to-this-folder modal state.
   const [empModal, setEmpModal] = useState(false);
@@ -108,6 +109,17 @@ export default function FolderContentsScreen() {
   const onMoveSub = async (folderId: string, parentId: string | null) => {
     try {
       await updateFolderParent(folderId, parentId);
+      await load();
+    } catch {
+      // ignore
+    }
+  };
+
+  const onRenameSub = async () => {
+    if (!subRename || !subRenameText.trim()) return;
+    try {
+      await updateFolderName(subRename.id, subRenameText.trim());
+      setSubRename(null);
       await load();
     } catch {
       // ignore
@@ -222,26 +234,15 @@ export default function FolderContentsScreen() {
       {/* Achievements */}
       {achievements.length > 0 ? <SectionTitle title={t('myAchievements')} /> : null}
       {achievements.map((item) => (
-        <Card
+        <AchievementRow
           key={item.id}
-          style={styles.card}
+          achievement={item}
+          editable={isOwner}
+          onChanged={load}
           onPress={() =>
             router.push(isOwner ? `/achievement/${item.id}` : `/evaluate/${item.id}`)
           }
-        >
-          <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={styles.iconBox}>
-              <Ionicons name="trophy-outline" size={20} color={colors.primaryDark} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.date}>{formatDate(item.created_at, language)}</Text>
-            </View>
-            <Badge label={t(item.status)} tone={statusTone(item.status)} />
-          </View>
-        </Card>
+        />
       ))}
 
       {empty ? (
@@ -362,6 +363,22 @@ export default function FolderContentsScreen() {
               onPress={() => {
                 const f = subMenu;
                 setSubMenu(null);
+                if (f) {
+                  setSubRenameText(f.name);
+                  setSubRename(f);
+                }
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="create-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('rename')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = subMenu;
+                setSubMenu(null);
                 setSubMoveMenu(f);
               }}
             >
@@ -423,6 +440,25 @@ export default function FolderContentsScreen() {
                   <Text style={styles.menuLabel}>{f.name}</Text>
                 </Pressable>
               ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Rename sub-folder */}
+      <Modal visible={!!subRename} transparent animationType="fade" onRequestClose={() => setSubRename(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setSubRename(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.sheetTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {t('rename')}
+            </Text>
+            <Input label={t('newName')} value={subRenameText} onChangeText={setSubRenameText} />
+            <Button title={t('save')} icon="checkmark" onPress={onRenameSub} />
+            <Button
+              title={t('cancel')}
+              variant="outline"
+              onPress={() => setSubRename(null)}
+              style={{ marginTop: spacing.sm }}
+            />
           </Pressable>
         </Pressable>
       </Modal>

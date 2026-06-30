@@ -204,6 +204,15 @@ export async function updateFolderParent(
   if (error) throw error;
 }
 
+/** Rename a folder. */
+export async function updateFolderName(id: string, name: string): Promise<void> {
+  const { error } = await supabase
+    .from('folders')
+    .update({ name })
+    .eq('id', id);
+  if (error) throw error;
+}
+
 /* ------------------------------ Achievements ----------------------------- */
 
 export async function listAchievements(ownerId: string): Promise<Achievement[]> {
@@ -237,6 +246,18 @@ export async function updateAchievementFolder(
   const { error } = await supabase
     .from('achievements')
     .update({ folder_id: folderId, updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+/** Rename an achievement (change its title). */
+export async function updateAchievementTitle(
+  id: string,
+  title: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('achievements')
+    .update({ title, updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw error;
 }

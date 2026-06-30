@@ -7,7 +7,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import {
-  Badge,
+  AchievementRow,
   Card,
   EmptyState,
   Header,
@@ -17,7 +17,6 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getProfileByCode, listAchievements } from '@/lib/api';
-import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -108,24 +107,13 @@ export default function SearchScreen() {
         <EmptyState icon="search-outline" message={t('noResults')} />
       ) : (
         results.map((item) => (
-          <Card
+          <AchievementRow
             key={item.id}
-            style={styles.card}
+            achievement={item}
+            editable
+            onChanged={load}
             onPress={() => router.push(`/achievement/${item.id}`)}
-          >
-            <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={styles.iconBox}>
-                <Ionicons name="trophy-outline" size={20} color={colors.primaryDark} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.date}>{formatDate(item.created_at, language)}</Text>
-              </View>
-              <Badge label={t(item.status)} tone={statusTone(item.status)} />
-            </View>
-          </Card>
+          />
         ))
       )}
     </Screen>

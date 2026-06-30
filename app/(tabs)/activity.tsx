@@ -10,6 +10,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import {
+  AchievementRow,
   Badge,
   Card,
   EmptyState,
@@ -189,26 +190,18 @@ export default function ActivityScreen() {
       {visible.length === 0 ? (
         <EmptyState message={t('noAchievements')} hint={t('addAchievementType')} />
       ) : (
-        visible.map((item) => (
-          <Card
-            key={item.id}
-            style={styles.card}
-            onPress={() => router.push(`/achievement/${item.id}`)}
-          >
-            <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={styles.iconBox}>
-                <Ionicons name="trophy-outline" size={22} color={colors.primaryDark} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.date}>{formatDate(item.created_at, language)}</Text>
-              </View>
-              <Badge label={t(item.status)} tone={statusTone(item.status)} />
-            </View>
-          </Card>
-        ))
+        <>
+          {visible.map((item) => (
+            <AchievementRow
+              key={item.id}
+              achievement={item}
+              editable
+              onChanged={load}
+              onPress={() => router.push(`/achievement/${item.id}`)}
+            />
+          ))}
+          <Text style={styles.hint}>{t('longPressHint')}</Text>
+        </>
       )}
     </Screen>
   );
@@ -278,6 +271,7 @@ const styles = StyleSheet.create({
   },
   reportTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
   reportHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
+  hint: { fontSize: 11, color: colors.mutedText, marginTop: spacing.xs, textAlign: 'center' },
   evalCard: { marginBottom: spacing.md, gap: spacing.sm },
   evalTop: { alignItems: 'center', justifyContent: 'space-between' },
   starsRow: { flexDirection: 'row', gap: 2 },

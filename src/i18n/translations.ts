@@ -220,7 +220,9 @@ export const translations = {
     developedBy: 'تطوير: هنادي المري',
     moveTo: 'نقل إلى',
     deleteFolderConfirm: 'حذف هذا المجلد؟',
-    longPressHint: 'اضغط مطولاً على المجلد للتعديل',
+    longPressHint: 'اضغط مطولاً للتعديل',
+    rename: 'إعادة تسمية',
+    newName: 'الاسم الجديد',
 
     // About app
     aboutApp: 'حول التطبيق',
@@ -456,7 +458,9 @@ export const translations = {
     developedBy: 'Developed by Hanadi Almarri',
     moveTo: 'Move to',
     deleteFolderConfirm: 'Delete this folder?',
-    longPressHint: 'Long-press a folder to edit',
+    longPressHint: 'Long-press to edit',
+    rename: 'Rename',
+    newName: 'New name',
 
     aboutApp: 'About the app',
     termsOfUse: 'Terms of Use',
