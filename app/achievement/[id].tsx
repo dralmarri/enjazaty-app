@@ -144,33 +144,19 @@ export default function AchievementDetailsScreen() {
         <EmptyState icon="attach-outline" message={t('attachments')} />
       ) : (
         attachments.map((att) => (
-          <Card key={att.id} style={styles.attachCard}>
+          <Card key={att.id} style={styles.attachCard} onPress={() => openAttachment(att)}>
             <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Pressable
-                style={[styles.attachMain, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                onPress={() => openAttachment(att)}
-              >
-                <View style={styles.attachIcon}>
-                  <Ionicons name={iconForType(att.type)} size={20} color={colors.primaryDark} />
-                </View>
-                <Text style={styles.attachName} numberOfLines={1}>
-                  {att.name ?? att.url}
-                </Text>
-              </Pressable>
-              {/* Sign & approve — images only for now */}
-              {att.type === 'image' ? (
-                <Pressable
-                  style={styles.signBtn}
-                  onPress={() =>
-                    router.push(
-                      `/sign?image=${encodeURIComponent(att.url)}&achievement=${achievement.id}`
-                    )
-                  }
-                  hitSlop={6}
-                >
-                  <Ionicons name="create-outline" size={18} color={colors.onPrimary} />
-                </Pressable>
-              ) : null}
+              <View style={styles.attachIcon}>
+                <Ionicons name={iconForType(att.type)} size={20} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.attachName} numberOfLines={1}>
+                {att.name ?? att.url}
+              </Text>
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={18}
+                color={colors.mutedText}
+              />
             </View>
           </Card>
         ))
@@ -257,15 +243,6 @@ const styles = StyleSheet.create({
   signature: { fontSize: 13, fontWeight: '700', color: colors.primaryDark, fontStyle: 'italic' },
   attachCard: { marginBottom: spacing.sm, paddingVertical: spacing.md },
   attachRow: { alignItems: 'center', gap: spacing.md },
-  attachMain: { flex: 1, alignItems: 'center', gap: spacing.md },
-  signBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   attachIcon: {
     width: 40,
     height: 40,

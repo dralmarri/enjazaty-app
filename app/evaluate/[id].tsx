@@ -11,7 +11,7 @@
 import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Badge,
   Button,
@@ -145,35 +145,45 @@ export default function EvaluateScreen() {
         <>
           <SectionTitle title={t('attachments')} />
           {attachments.map((att) => (
-            <Card
-              key={att.id}
-              style={styles.attachCard}
-              onPress={() => Linking.openURL(att.url).catch(() => {})}
-            >
+            <Card key={att.id} style={styles.attachCard}>
               <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <View style={styles.attachIcon}>
-                  <Ionicons
-                    name={
-                      att.type === 'image'
-                        ? 'image'
-                        : att.type === 'video'
-                        ? 'videocam'
-                        : att.type === 'link'
-                        ? 'link'
-                        : 'document'
+                <Pressable
+                  style={[styles.attachMain, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  onPress={() => Linking.openURL(att.url).catch(() => {})}
+                >
+                  <View style={styles.attachIcon}>
+                    <Ionicons
+                      name={
+                        att.type === 'image'
+                          ? 'image'
+                          : att.type === 'video'
+                          ? 'videocam'
+                          : att.type === 'link'
+                          ? 'link'
+                          : 'document'
+                      }
+                      size={20}
+                      color={colors.primaryDark}
+                    />
+                  </View>
+                  <Text style={styles.attachName} numberOfLines={1}>
+                    {att.name ?? att.url}
+                  </Text>
+                </Pressable>
+                {/* Supervisor signs & approves an image directly */}
+                {att.type === 'image' && canEvaluate ? (
+                  <Pressable
+                    style={styles.signBtn}
+                    onPress={() =>
+                      router.push(
+                        `/sign?image=${encodeURIComponent(att.url)}&achievement=${achievement.id}`
+                      )
                     }
-                    size={20}
-                    color={colors.primaryDark}
-                  />
-                </View>
-                <Text style={styles.attachName} numberOfLines={1}>
-                  {att.name ?? att.url}
-                </Text>
-                <Ionicons
-                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
-                  size={18}
-                  color={colors.mutedText}
-                />
+                    hitSlop={6}
+                  >
+                    <Ionicons name="create-outline" size={18} color={colors.onPrimary} />
+                  </Pressable>
+                ) : null}
               </View>
             </Card>
           ))}
@@ -271,6 +281,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   attachName: { flex: 1, fontSize: 14, color: colors.textDark },
+  attachMain: { flex: 1, alignItems: 'center', gap: spacing.md },
+  signBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   section: { marginTop: spacing.lg, gap: spacing.md },
   label: { fontSize: 14, fontWeight: '600', color: colors.textDark },
   starsRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
