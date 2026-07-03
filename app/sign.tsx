@@ -44,6 +44,7 @@ export default function SignScreen() {
   const [paths, setPaths] = useState<string[]>([]);
   const [capturing, setCapturing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canvasRef = useRef<View>(null);
 
@@ -121,6 +122,7 @@ export default function SignScreen() {
 
   const onApprove = () => {
     if (!profile || !achievementId) return;
+    setError(null);
     setBusy(true);
     // Hide handles before capturing the flattened image.
     setCapturing(true);
@@ -152,7 +154,8 @@ export default function SignScreen() {
           });
         }
         router.back();
-      } catch {
+      } catch (e: any) {
+        setError(e?.message ?? t('error'));
         setCapturing(false);
         setBusy(false);
       }
@@ -231,6 +234,8 @@ export default function SignScreen() {
             </View>
           </View>
 
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
           <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
             <Button
               title={t('drawNew')}
@@ -257,6 +262,7 @@ export default function SignScreen() {
 
 const styles = StyleSheet.create({
   note: { fontSize: 12, color: colors.mutedText, textAlign: 'center', marginTop: spacing.md },
+  error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.md },
   canvas: {
     height: 420,
     backgroundColor: colors.softBackground,

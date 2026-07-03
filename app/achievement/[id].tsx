@@ -18,6 +18,7 @@ import {
   Screen,
   SectionTitle,
   Select,
+  SignatureView,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -184,7 +185,7 @@ export default function AchievementDetailsScreen() {
               <Text style={styles.evalComment}>{evaluation.comment}</Text>
             ) : null}
             {evaluation.signature ? (
-              <Text style={styles.signature}>✍️ {evaluation.signature}</Text>
+              <SignatureView value={evaluation.signature} height={90} />
             ) : null}
           </Card>
         </>
@@ -240,7 +241,6 @@ const styles = StyleSheet.create({
   evalTop: { alignItems: 'center', justifyContent: 'space-between' },
   starsRow: { flexDirection: 'row', gap: 2 },
   evalComment: { fontSize: 14, color: colors.textDark },
-  signature: { fontSize: 13, fontWeight: '700', color: colors.primaryDark, fontStyle: 'italic' },
   attachCard: { marginBottom: spacing.sm, paddingVertical: spacing.md },
   attachRow: { alignItems: 'center', gap: spacing.md },
   attachIcon: {

@@ -548,9 +548,9 @@ export async function supervises(
     .select('id')
     .eq('supervisor_id', supervisorId)
     .eq('subordinate_id', subordinateId)
-    .maybeSingle();
+    .limit(1);
   if (error) return false;
-  return !!data;
+  return !!data && data.length > 0;
 }
 
 /* ------------------------------ Notifications ---------------------------- */

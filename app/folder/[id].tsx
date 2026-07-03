@@ -38,6 +38,25 @@ import {
 import type { Achievement, Folder, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
+/**
+ * Ids of `rootId` and all folders nested under it. A folder may not be moved
+ * into itself or any of these — that would orphan the subtree into a cycle.
+ */
+function subtreeIds(rootId: string, all: Folder[]): Set<string> {
+  const ids = new Set<string>([rootId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const f of all) {
+      if (f.parent_id && ids.has(f.parent_id) && !ids.has(f.id)) {
+        ids.add(f.id);
+        grew = true;
+      }
+    }
+  }
+  return ids;
+}
+
 export default function FolderContentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useAuth();
@@ -422,9 +441,12 @@ export default function FolderContentsScreen() {
               </View>
               <Text style={styles.menuLabel}>{t('placeInWorkspace')}</Text>
             </Pressable>
-            {allFolders
-              .filter((f) => f.id !== subMoveMenu?.id)
-              .map((f) => (
+            {(() => {
+              const blocked = subMoveMenu
+                ? subtreeIds(subMoveMenu.id, allFolders)
+                : new Set<string>();
+              return allFolders.filter((f) => !blocked.has(f.id));
+            })().map((f) => (
                 <Pressable
                   key={f.id}
                   style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}

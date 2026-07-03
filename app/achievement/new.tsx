@@ -51,6 +51,14 @@ export default function NewAchievementScreen() {
   const { profile } = useAuth();
   const { t, isRTL } = useLanguage();
 
+  // Route params: ?source opens a picker (library/camera/files),
+  // ?folder pre-selects a folder, ?owner creates it in another user's space.
+  const { source, folder: folderParam, owner } = useLocalSearchParams<{
+    source?: string;
+    folder?: string;
+    owner?: string;
+  }>();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [folderId, setFolderId] = useState<string | null>(null);
@@ -64,11 +72,13 @@ export default function NewAchievementScreen() {
   const loadFolders = useCallback(async () => {
     if (!profile) return;
     try {
-      setFolders(await listFolders(profile.id));
+      // When adding on behalf of an employee (?owner), show THEIR folders so
+      // the achievement is filed under a folder the employee actually owns.
+      setFolders(await listFolders(owner ?? profile.id));
     } catch {
       // ignore
     }
-  }, [profile]);
+  }, [profile, owner]);
 
   useEffect(() => {
     loadFolders();
@@ -130,13 +140,6 @@ export default function NewAchievementScreen() {
     }
   };
 
-  // Route params: ?source opens a picker (library/camera/files),
-  // ?folder pre-selects a folder, ?owner creates it in another user's space.
-  const { source, folder: folderParam, owner } = useLocalSearchParams<{
-    source?: string;
-    folder?: string;
-    owner?: string;
-  }>();
   const autoOpened = useRef(false);
   useEffect(() => {
     if (autoOpened.current) return;

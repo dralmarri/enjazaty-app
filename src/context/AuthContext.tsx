@@ -62,6 +62,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // True once a profile query has completed WITHOUT error (whether or not a row
+  // exists). Guards against a transient query failure being mistaken for "no
+  // profile yet" and wrongly routing an existing user into complete-profile.
+  const [profileChecked, setProfileChecked] = useState(false);
 
   /** Load the users_profile row for the signed-in user. */
   const loadProfile = useCallback(async (userId: string) => {
@@ -73,10 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) {
       // eslint-disable-next-line no-console
       console.warn('[Auth] Failed to load profile:', error.message);
-      setProfile(null);
+      // Do NOT mark as checked — a transient failure must not look like a
+      // missing profile row.
+      setProfileChecked(false);
       return;
     }
     setProfile((data as UserProfile) ?? null);
+    setProfileChecked(true);
   }, []);
 
   // Bootstrap: read existing session and subscribe to auth changes.
@@ -99,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await loadProfile(newSession.user.id);
         } else {
           setProfile(null);
+          setProfileChecked(false);
         }
       }
     );
@@ -203,7 +211,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       loading,
       isAdmin: profile?.role === 'admin',
-      needsProfile: !!session && !profile,
+      // Only prompt for profile creation once we've CONFIRMED (no error) that
+      // no row exists — never on a transient load failure.
+      needsProfile: !!session && !profile && profileChecked,
       pendingRole: (session?.user?.user_metadata?.role as UserRole) ?? null,
       signIn,
       signUp,
@@ -218,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       profile,
       loading,
+      profileChecked,
       signIn,
       signUp,
       verifyOtp,
