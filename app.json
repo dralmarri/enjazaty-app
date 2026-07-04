@@ -19,7 +19,9 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "نحتاج الوصول إلى الصور لرفع المرفقات والإنجازات.",
         "NSCameraUsageDescription": "نحتاج الوصول إلى الكاميرا لالتقاط الصور.",
-        "NSMicrophoneUsageDescription": "نحتاج الوصول إلى الميكروفون لتسجيل الملاحظات الصوتية."
+        "NSMicrophoneUsageDescription": "نحتاج الوصول إلى الميكروفون لتسجيل الملاحظات الصوتية.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "ar"
       }
     },
     "android": {
@@ -63,6 +65,9 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "733fc2a8-a7b1-4359-8525-0d86d9ecf3c7"
       }
     }
   }
