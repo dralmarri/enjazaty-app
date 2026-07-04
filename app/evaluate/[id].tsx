@@ -34,6 +34,7 @@ import {
   listAttachments,
   supervises,
 } from '@/lib/api';
+import { isEditableDocument } from '@/lib/documents';
 import { formatDate } from '@/lib/format';
 import type { Achievement, Attachment, Evaluation } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
@@ -149,7 +150,15 @@ export default function EvaluateScreen() {
               <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Pressable
                   style={[styles.attachMain, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                  onPress={() => Linking.openURL(att.url).catch(() => {})}
+                  onPress={() => {
+                    // Editable Office documents open in the embedded editor
+                    // (the supervisor can review/edit before signing).
+                    if (isEditableDocument(att)) {
+                      router.push(`/doc/${att.id}?name=${encodeURIComponent(att.name ?? '')}`);
+                      return;
+                    }
+                    Linking.openURL(att.url).catch(() => {});
+                  }}
                 >
                   <View style={styles.attachIcon}>
                     <Ionicons

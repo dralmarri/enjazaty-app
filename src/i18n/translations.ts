@@ -138,6 +138,11 @@ export const translations = {
     close: 'إغلاق',
     search: 'بحث',
 
+    // Embedded document editor
+    docEditorTitle: 'تحرير المستند',
+    docEditorHint: 'التعديلات تُحفظ تلقائياً في نفس الملف',
+    docEditorLoading: 'جاري فتح المستند…',
+
     // Role selection screen
     chooseUserType: 'اختر نوع المستخدم',
     chooseUserTypeHint: 'حدّد دورك للمتابعة',
@@ -406,6 +411,10 @@ export const translations = {
     add: 'Add',
     close: 'Close',
     search: 'Search',
+
+    docEditorTitle: 'Edit Document',
+    docEditorHint: 'Changes are saved automatically to the same file',
+    docEditorLoading: 'Opening the document…',
 
     chooseUserType: 'Choose user type',
     chooseUserTypeHint: 'Select your role to continue',

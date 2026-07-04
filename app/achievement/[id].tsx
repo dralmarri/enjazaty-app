@@ -31,6 +31,7 @@ import {
   updateAchievementFolder,
   updateAchievementStatus,
 } from '@/lib/api';
+import { isEditableDocument } from '@/lib/documents';
 import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, Attachment, Evaluation, Folder } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
@@ -101,6 +102,12 @@ export default function AchievementDetailsScreen() {
   };
 
   const openAttachment = (att: Attachment) => {
+    // Editable Office documents open in the embedded in-app editor; the rest
+    // keep the platform open/download behavior.
+    if (isEditableDocument(att)) {
+      router.push(`/doc/${att.id}?name=${encodeURIComponent(att.name ?? '')}`);
+      return;
+    }
     Linking.openURL(att.url).catch(() => {});
   };
 

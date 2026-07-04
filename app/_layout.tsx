@@ -43,6 +43,7 @@ export default function RootLayout() {
               <Stack.Screen name="report" />
               <Stack.Screen name="signatures" />
               <Stack.Screen name="sign" />
+              <Stack.Screen name="doc" />
             </Stack>
           </AuthProvider>
         </LanguageProvider>
