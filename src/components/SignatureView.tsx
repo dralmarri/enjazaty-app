@@ -1,14 +1,65 @@
 /**
- * SignatureView — renders a stored signature. The value is either a JSON array
- * of SVG path strings (hand-drawn) or, for older records, plain typed text.
+ * SignatureView — renders a stored signature for EVERY viewer (owner,
+ * supervisor, sub-admin, employee) identically.
  *
- * A viewBox is computed from the stroke coordinates so the signature always
- * scales to fit its box (regardless of the device it was drawn on).
+ * Handles every historical storage format:
+ *  - JSON array of SVG path strings (current format)
+ *  - double-encoded JSON (a JSON string containing the array)
+ *  - bare SVG path data, e.g. "M 173.7 86.0 L 213.7 …" (legacy records)
+ *  - plain typed text (oldest records: the evaluator's typed name)
+ *
+ * Raw path data is NEVER shown as text: anything that looks like stroke
+ * coordinates is drawn as a signature; only genuine human text falls back
+ * to the typed style. A viewBox computed from the stroke coordinates keeps
+ * the drawing scaled to its box on every device.
  */
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { colors, radius } from '@/theme/colors';
+
+/** True when the string looks like SVG path data (starts with an M command). */
+function looksLikePath(s: string): boolean {
+  return /^\s*[Mm]\s*-?\d/.test(s);
+}
+
+/** Split concatenated path data into one path per stroke (each starts at M). */
+function splitStrokes(d: string): string[] {
+  const parts = d
+    .split(/(?=[Mm]\s*-?\d)/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts.length ? parts : [d];
+}
+
+/** Parse ANY stored signature format into drawable path strings, or null. */
+function parseSignature(value: string): string[] | null {
+  try {
+    let parsed: unknown = JSON.parse(value);
+    if (typeof parsed === 'string') {
+      // Double-encoded JSON — unwrap once more if possible.
+      try {
+        parsed = JSON.parse(parsed);
+      } catch {
+        // keep as string
+      }
+    }
+    if (Array.isArray(parsed)) {
+      const paths = parsed
+        .filter((p): p is string => typeof p === 'string')
+        .flatMap((p) => (looksLikePath(p) ? splitStrokes(p) : []));
+      if (paths.length > 0) return paths;
+      return null;
+    }
+    if (typeof parsed === 'string' && looksLikePath(parsed)) {
+      return splitStrokes(parsed);
+    }
+  } catch {
+    // not JSON at all
+  }
+  if (looksLikePath(value)) return splitStrokes(value);
+  return null;
+}
 
 /** Compute a fitting viewBox "minX minY width height" from SVG path strings. */
 function computeViewBox(paths: string[]): string {
@@ -37,19 +88,15 @@ function computeViewBox(paths: string[]): string {
 }
 
 export function SignatureView({ value, height = 120 }: { value: string; height?: number }) {
-  let paths: string[] | null = null;
-  try {
-    const parsed = JSON.parse(value);
-    if (Array.isArray(parsed) && parsed.every((p) => typeof p === 'string')) {
-      paths = parsed;
-    }
-  } catch {
-    paths = null;
-  }
+  const paths = parseSignature(value);
 
-  // Old/typed signature → show as text.
   if (!paths || paths.length === 0) {
-    return <Text style={styles.typed}>✍️ {value}</Text>;
+    // Only genuine human text (old typed-name signatures) may show as text.
+    // Anything that still resembles coordinate data is masked — raw stroke
+    // codes must never reach the screen.
+    const isHumanText =
+      value.length <= 80 && !/-?\d+(\.\d+)?\s+-?\d+(\.\d+)?\s*[LlMm]/.test(value);
+    return <Text style={styles.typed}>✍️ {isHumanText ? value : ''}</Text>;
   }
 
   const viewBox = computeViewBox(paths);
