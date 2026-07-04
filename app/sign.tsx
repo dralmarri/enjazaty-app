@@ -9,7 +9,7 @@
  *
  * Note: PDF signing is not yet supported — images only for now.
  */
-import React, { useMemo, useReducer, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Image, PanResponder, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -45,6 +45,36 @@ export default function SignScreen() {
   const [capturing, setCapturing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The image actually rendered. On web we inline the remote image as a data
+  // URL so react-native-view-shot can capture the canvas without the browser
+  // tainting it (a cross-origin image would otherwise make capture throw).
+  const [displayUri, setDisplayUri] = useState(imageUrl);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (Platform.OS !== 'web' || !imageUrl) {
+      setDisplayUri(imageUrl);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch(imageUrl, { mode: 'cors' });
+        const blob = await res.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (!cancelled) {
+            setDisplayUri(typeof reader.result === 'string' ? reader.result : imageUrl);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch {
+        if (!cancelled) setDisplayUri(imageUrl);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
 
   const canvasRef = useRef<View>(null);
 
@@ -198,8 +228,8 @@ export default function SignScreen() {
               Platform.OS === 'web' ? ({ touchAction: 'none' } as any) : null,
             ]}
           >
-            {imageUrl ? (
-              <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="contain" />
+            {displayUri ? (
+              <Image source={{ uri: displayUri }} style={styles.image} resizeMode="contain" />
             ) : null}
 
             {/* Signature overlay (transformable) */}

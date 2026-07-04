@@ -172,21 +172,26 @@ export default function AccountScreen() {
         })}
       </View>
 
-      {/* My signatures */}
-      <SectionTitle title={t('signatures')} />
-      <Card onPress={() => router.push('/signatures')}>
-        <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={[styles.infoLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Ionicons name="create-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.infoLabel}>{t('mySignatures')}</Text>
-          </View>
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={18}
-            color={colors.mutedText}
-          />
-        </View>
-      </Card>
+      {/* My signatures — only supervisors (admins) sign, so employees don't
+          get a signature library. */}
+      {isAdmin ? (
+        <>
+          <SectionTitle title={t('signatures')} />
+          <Card onPress={() => router.push('/signatures')}>
+            <View style={[styles.infoRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.infoLeft, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Ionicons name="create-outline" size={18} color={colors.primaryDark} />
+                <Text style={styles.infoLabel}>{t('mySignatures')}</Text>
+              </View>
+              <Ionicons
+                name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                size={18}
+                color={colors.mutedText}
+              />
+            </View>
+          </Card>
+        </>
+      ) : null}
 
       {/* About the app */}
       <SectionTitle title={t('aboutApp')} />
