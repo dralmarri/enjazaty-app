@@ -67,9 +67,18 @@ export default function DocumentEditorScreen() {
       ) : (
         <View style={styles.editorBox}>
           {Platform.OS === 'web' ? (
+            // Absolute fill so the iframe can never collapse to zero height
+            // inside the flex chain.
             React.createElement('iframe' as any, {
               src: editorUrl,
-              style: { width: '100%', height: '100%', border: 'none' },
+              style: {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                border: 'none',
+              },
               allow: 'clipboard-read; clipboard-write; fullscreen',
             })
           ) : (

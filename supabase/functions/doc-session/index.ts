@@ -25,6 +25,7 @@ const ZOHO_BASE =
   Deno.env.get('ZOHO_OI_BASE_URL') ?? 'https://api.office-integrator.com';
 const ZOHO_KEY = Deno.env.get('ZOHO_OI_API_KEY') ?? '';
 const SAVE_SECRET = Deno.env.get('DOC_SAVE_SECRET') ?? '';
+const BUCKET = 'attachments';
 
 /** Editable extensions → Zoho service endpoint + save format (same ext). */
 const EDITORS: Record<string, { endpoint: string; saveFormat: string }> = {
@@ -122,9 +123,23 @@ Deno.serve(async (req) => {
     const editor = EDITORS[extOf(fileName)] ?? EDITORS[extOf(att.url)];
     if (!editor) return json(400, { error: 'Unsupported document type' });
 
+    // Download the CURRENT file bytes from storage and hand them to Zoho as a
+    // multipart upload. (Passing a URL instead proved unreliable — Zoho opened
+    // a blank document when it could not resolve/fetch the link.)
+    const cleanUrl = (att.url as string).split('?')[0];
+    const marker = `/object/public/${BUCKET}/`;
+    const markerIdx = cleanUrl.indexOf(marker);
+    if (markerIdx < 0) return json(400, { error: 'Attachment is not a stored file' });
+    const storagePath = decodeURIComponent(cleanUrl.slice(markerIdx + marker.length));
+    const { data: fileBlob, error: dlErr } = await admin.storage
+      .from(BUCKET)
+      .download(storagePath);
+    if (dlErr || !fileBlob) {
+      return json(500, { error: `Could not read the document: ${dlErr?.message ?? 'download failed'}` });
+    }
+
     // The save callback overwrites the SAME storage object; the token proves
     // the request originated from a session we created.
-    const cleanUrl = (att.url as string).split('?')[0];
     const token = await hmacHex(att.id, SAVE_SECRET);
     const saveUrl = `${supabaseUrl}/functions/v1/doc-save?attachment=${att.id}&token=${token}`;
 
@@ -134,10 +149,10 @@ Deno.serve(async (req) => {
       .eq('id', callerId)
       .maybeSingle();
 
-    const form = new URLSearchParams();
+    const form = new FormData();
     form.set('apikey', ZOHO_KEY);
-    // Cache-bust so the editor always loads the latest saved bytes.
-    form.set('url', `${cleanUrl}?v=${Date.now()}`);
+    // Actual file content — no URL fetching on Zoho's side.
+    form.append('document', fileBlob, fileName);
     form.set(
       'document_info',
       JSON.stringify({
@@ -165,8 +180,7 @@ Deno.serve(async (req) => {
 
     const zres = await fetch(`${ZOHO_BASE}${editor.endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: form.toString(),
+      body: form,
     });
     const ztext = await zres.text();
     let zdata: Record<string, unknown> | null = null;
