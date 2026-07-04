@@ -1,7 +1,13 @@
 /**
  * Embedded document editor — opens an editable attachment (Word/Excel/
- * PowerPoint/…) in a full Office editor INSIDE the app (Zoho Office
- * Integrator session created by the doc-session edge function).
+ * PowerPoint/…) in a full Office editor (Zoho Office Integrator session
+ * created by the doc-session edge function).
+ *
+ * Native: the editor renders INSIDE the app in a WebView (cookies are
+ * first-party there, so editing works).
+ * Web: browsers block third-party cookies inside iframes (Zoho error 5022 →
+ * read-only editor), so the editor opens in its own tab instead — launched
+ * from a button tap so popup blockers allow it.
  *
  * Edits are saved automatically back onto the SAME file in storage via the
  * doc-save callback — no download / re-upload, record & history intact.
@@ -10,6 +16,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { Button, Header, Screen } from '@/components';
 import { useLanguage } from '@/context/LanguageContext';
@@ -50,6 +57,13 @@ export default function DocumentEditorScreen() {
     load();
   }, [load]);
 
+  // Web: must run inside the tap handler so popup blockers allow the tab.
+  const openInTab = () => {
+    if (editorUrl && typeof window !== 'undefined') {
+      window.open(editorUrl, '_blank', 'noopener');
+    }
+  };
+
   return (
     <Screen scroll={false}>
       <Header title={name || t('docEditorTitle')} showBack subtitle={t('docEditorHint')} />
@@ -64,37 +78,37 @@ export default function DocumentEditorScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.hint}>{t('docEditorLoading')}</Text>
         </View>
+      ) : Platform.OS === 'web' ? (
+        <View style={styles.center}>
+          <View style={styles.readyIcon}>
+            <Ionicons name="document-text" size={44} color={colors.primaryDark} />
+          </View>
+          <Text style={styles.readyTitle}>{t('docEditorReady')}</Text>
+          <Text style={styles.hint}>{t('docEditorTabHint')}</Text>
+          <Button
+            title={t('docEditorOpenTab')}
+            icon="open-outline"
+            onPress={openInTab}
+            fullWidth={false}
+            style={styles.openBtn}
+          />
+        </View>
       ) : (
         <View style={styles.editorBox}>
-          {Platform.OS === 'web' ? (
-            // Absolute fill so the iframe can never collapse to zero height
-            // inside the flex chain.
-            React.createElement('iframe' as any, {
-              src: editorUrl,
-              style: {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              },
-              allow: 'clipboard-read; clipboard-write; fullscreen',
-            })
-          ) : (
-            <NativeWebView
-              source={{ uri: editorUrl }}
-              style={styles.webview}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              renderLoading={() => (
-                <View style={styles.center}>
-                  <ActivityIndicator size="large" color={colors.primary} />
-                </View>
-              )}
-            />
-          )}
+          <NativeWebView
+            source={{ uri: editorUrl }}
+            style={styles.webview}
+            javaScriptEnabled
+            domStorageEnabled
+            sharedCookiesEnabled
+            thirdPartyCookiesEnabled
+            startInLoadingState
+            renderLoading={() => (
+              <View style={styles.center}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            )}
+          />
         </View>
       )}
     </Screen>
@@ -109,8 +123,20 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     padding: spacing.xl,
   },
-  hint: { fontSize: 14, color: colors.mutedText, textAlign: 'center' },
+  hint: { fontSize: 14, color: colors.mutedText, textAlign: 'center', lineHeight: 22 },
   error: { fontSize: 14, color: colors.danger, textAlign: 'center' },
+  readyIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: colors.softBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  readyTitle: { fontSize: 18, fontWeight: '800', color: colors.textDark, textAlign: 'center' },
+  openBtn: { marginTop: spacing.sm },
   editorBox: {
     flex: 1,
     borderRadius: radius.lg,

@@ -142,6 +142,10 @@ export const translations = {
     docEditorTitle: 'تحرير المستند',
     docEditorHint: 'التعديلات تُحفظ تلقائياً في نفس الملف',
     docEditorLoading: 'جاري فتح المستند…',
+    docEditorReady: 'المستند جاهز للتحرير',
+    docEditorOpenTab: 'فتح المحرر الآن',
+    docEditorTabHint:
+      'سيُفتح المحرر في تبويب جديد. عدّل المستند ثم أغلق التبويب وارجع إلى التطبيق — التعديلات تُحفظ تلقائياً في نفس الملف.',
 
     // Role selection screen
     chooseUserType: 'اختر نوع المستخدم',
@@ -415,6 +419,10 @@ export const translations = {
     docEditorTitle: 'Edit Document',
     docEditorHint: 'Changes are saved automatically to the same file',
     docEditorLoading: 'Opening the document…',
+    docEditorReady: 'The document is ready to edit',
+    docEditorOpenTab: 'Open the editor now',
+    docEditorTabHint:
+      'The editor opens in a new tab. Edit the document, close the tab, and come back — changes are saved automatically to the same file.',
 
     chooseUserType: 'Choose user type',
     chooseUserTypeHint: 'Select your role to continue',
