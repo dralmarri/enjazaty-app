@@ -41,7 +41,7 @@ import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EvaluateScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { profile, isAdmin } = useAuth();
+  const { profile } = useAuth();
   const { t, language, isRTL } = useLanguage();
 
   const [achievement, setAchievement] = useState<Achievement | null>(null);
@@ -70,16 +70,16 @@ export default function EvaluateScreen() {
       setEvaluation(existing);
       setAttachments(atts);
       if (ach) {
-        // You may evaluate only OTHERS' work, and only if you supervise them
-        // (admins may evaluate any subordinate's work too).
+        // You may evaluate only OTHERS' work, and only people inside YOUR
+        // administrative chain (any level below you) — never outside it.
         const isOwner = ach.owner_id === profile.id;
         const sup = await supervises(profile.id, ach.owner_id);
-        setCanEvaluate(!isOwner && (sup || isAdmin));
+        setCanEvaluate(!isOwner && sup);
       }
     } finally {
       setLoading(false);
     }
-  }, [id, profile, isAdmin]);
+  }, [id, profile]);
 
   useFocusEffect(
     useCallback(() => {

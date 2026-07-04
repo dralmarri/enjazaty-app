@@ -538,19 +538,30 @@ export async function listSupervisionsByFolder(
   return (data ?? []) as any;
 }
 
-/** True when `supervisorId` supervises `subordinateId`. */
+/**
+ * True when `supervisorId` supervises `subordinateId` — at ANY level of the
+ * administrative chain (direct, or through sub-admins below him).
+ */
 export async function supervises(
   supervisorId: string,
   subordinateId: string
 ): Promise<boolean> {
-  const { data, error } = await supabase
+  // Transitive check via the DB chain function (migration_v7).
+  const { data, error } = await supabase.rpc('in_supervision_chain', {
+    sup: supervisorId,
+    target: subordinateId,
+  });
+  if (!error && typeof data === 'boolean') return data;
+
+  // Fallback (function not deployed yet): direct link only.
+  const direct = await supabase
     .from('supervisions')
     .select('id')
     .eq('supervisor_id', supervisorId)
     .eq('subordinate_id', subordinateId)
     .limit(1);
-  if (error) return false;
-  return !!data && data.length > 0;
+  if (direct.error) return false;
+  return !!direct.data && direct.data.length > 0;
 }
 
 /* ------------------------------ Notifications ---------------------------- */

@@ -19,9 +19,9 @@ import {
   SectionTitle,
 } from '@/components';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfile, listAchievements, listRootFolders } from '@/lib/api';
+import { getProfile, listAchievements, listRootFolders, listSupervisions } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Folder, UserProfile } from '@/types/database';
+import type { Achievement, Folder, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EmployeeProfileScreen() {
@@ -30,6 +30,7 @@ export default function EmployeeProfileScreen() {
   const [employee, setEmployee] = useState<UserProfile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [team, setTeam] = useState<(Supervision & { subordinate: UserProfile })[]>([]);
   const [loading, setLoading] = useState(true);
   const [addMenu, setAddMenu] = useState(false);
 
@@ -37,14 +38,18 @@ export default function EmployeeProfileScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const [emp, achs, fdrs] = await Promise.all([
+      const [emp, achs, fdrs, subs] = await Promise.all([
         getProfile(id),
         listAchievements(id),
         listRootFolders(id),
+        // This user's OWN subordinates (if he is a sub-admin) — lets a top
+        // admin drill down the whole organisational tree level by level.
+        listSupervisions(id).catch(() => []),
       ]);
       setEmployee(emp);
       setAchievements(achs);
       setFolders(fdrs);
+      setTeam(subs);
     } finally {
       setLoading(false);
     }
@@ -94,6 +99,42 @@ export default function EmployeeProfileScreen() {
           </View>
         </View>
       </Card>
+
+      {/* This user's own team (when he is a sub-admin) — tap to drill down
+          the organisational tree level by level. */}
+      {team.length > 0 ? (
+        <>
+          <SectionTitle title={t('subordinateEmployees')} />
+          {team.map((it) => (
+            <Card
+              key={it.id}
+              style={styles.achCard}
+              onPress={() => router.push(`/employees/${it.subordinate.id}`)}
+            >
+              <View style={[styles.achRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Avatar
+                  name={it.subordinate.full_name}
+                  uri={it.subordinate.avatar_url}
+                  size={40}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.achTitle} numberOfLines={1}>
+                    {it.subordinate.full_name}
+                  </Text>
+                  <Text style={styles.achDate}>
+                    {it.subordinate.job_title || it.subordinate.user_code}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={18}
+                  color={colors.mutedText}
+                />
+              </View>
+            </Card>
+          ))}
+        </>
+      ) : null}
 
       {/* Employee folders — supervisor can open them to browse files. */}
       {folders.length > 0 ? (

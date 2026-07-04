@@ -98,17 +98,18 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (attErr || !att) return json(404, { error: 'Attachment not found' });
 
-    // Permission: owner, admin, or supervisor of the owner.
+    // Permission: the owner, or any supervisor ABOVE the owner in the
+    // administrative chain (transitive — migration_v7).
     let allowed = att.owner_id === callerId;
     if (!allowed) {
-      const { data: prof } = await admin
-        .from('users_profile')
-        .select('role')
-        .eq('id', callerId)
-        .maybeSingle();
-      allowed = prof?.role === 'admin';
+      const { data: chain } = await admin.rpc('in_supervision_chain', {
+        sup: callerId,
+        target: att.owner_id,
+      });
+      allowed = chain === true;
     }
     if (!allowed) {
+      // Fallback while migration_v7 hasn't been applied: direct link only.
       const { data: sup } = await admin
         .from('supervisions')
         .select('id')

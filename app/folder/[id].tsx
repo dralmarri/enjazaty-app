@@ -96,14 +96,16 @@ export default function FolderContentsScreen() {
       setFolder(f);
       setSubFolders(subs);
       setAchievements(achs);
-      // Owner-only extras: employees classified here + folders for moving.
-      if (f && f.owner_id === profile?.id) {
-        const [emps, all] = await Promise.all([
-          listSupervisionsByFolder(profile.id, id),
-          listFolders(profile.id),
-        ]);
+      if (f) {
+        // Employees classified into this folder — visible to the folder owner
+        // AND to every supervisor above him (RLS scopes the rows), so a top
+        // admin browsing a sub-admin's folder sees its employees too.
+        const emps = await listSupervisionsByFolder(f.owner_id, id).catch(() => []);
         setFolderEmployees(emps);
-        setAllFolders(all);
+        // Owner-only extras: target folders for the move menu.
+        if (f.owner_id === profile?.id) {
+          setAllFolders(await listFolders(profile.id));
+        }
       }
     } finally {
       setLoading(false);
