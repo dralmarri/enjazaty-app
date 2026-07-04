@@ -17,6 +17,7 @@ import {
   Header,
   Screen,
   SectionTitle,
+  SignatureView,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -158,9 +159,10 @@ export default function ActivityScreen() {
               </View>
               {ev.comment ? <Text style={styles.evalComment}>{ev.comment}</Text> : null}
               {ev.signature ? (
-                <Text style={styles.signature}>
-                  {t('eSignature')}: {ev.signature}
-                </Text>
+                <View style={styles.signBox}>
+                  <Text style={styles.signLabel}>{t('eSignature')}</Text>
+                  <SignatureView value={ev.signature} height={80} />
+                </View>
               ) : null}
               <Text style={styles.evalDate}>{formatDate(ev.created_at, language)}</Text>
             </Card>
@@ -276,7 +278,13 @@ const styles = StyleSheet.create({
   evalTop: { alignItems: 'center', justifyContent: 'space-between' },
   starsRow: { flexDirection: 'row', gap: 2 },
   evalComment: { fontSize: 14, color: colors.textDark },
-  signature: { fontSize: 12, color: colors.primaryDark, fontStyle: 'italic' },
+  signBox: {
+    backgroundColor: colors.softBackground,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    alignItems: 'center',
+  },
+  signLabel: { fontSize: 12, color: colors.mutedText, marginBottom: 2 },
   evalDate: { fontSize: 11, color: colors.mutedText },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
   chip: {
