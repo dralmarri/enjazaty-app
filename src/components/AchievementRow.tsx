@@ -1,10 +1,12 @@
 /**
- * AchievementRow — a tappable achievement card with optional long-press
- * editing (rename / move to folder / delete). Reused across the activity feed,
- * workspace, folders and search so editing behaves the same everywhere.
+ * AchievementRow — a tappable achievement card with a long-press action menu.
+ * Every user gets print / share / save-to-device; the owner additionally gets
+ * rename / move to folder / delete (with confirmation). Reused across the
+ * activity feed, workspace, folders and search so behaviour is identical
+ * everywhere.
  */
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -14,6 +16,7 @@ import {
   updateAchievementFolder,
   updateAchievementTitle,
 } from '@/lib/api';
+import { printAchievement, saveAchievement, shareAchievement } from '@/lib/achievementDoc';
 import { formatDate, statusTone } from '@/lib/format';
 import type { Achievement, Folder } from '@/types/database';
 import { Badge } from './Badge';
@@ -43,14 +46,33 @@ export function AchievementRow({
   const [menu, setMenu] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [name, setName] = useState(achievement.title);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [busy, setBusy] = useState(false);
+  // Building the printable/PDF sheet takes a moment — show an overlay.
+  const [docBusy, setDocBusy] = useState(false);
 
   const openMove = async () => {
     setMenu(false);
     if (profile) setFolders(await listFolders(profile.id));
     setMoveOpen(true);
+  };
+
+  const docOptions = () => ({ achievement, t, language, isRTL });
+
+  const runDocAction = async (action: 'print' | 'share' | 'save') => {
+    setMenu(false);
+    setDocBusy(true);
+    try {
+      if (action === 'print') await printAchievement(docOptions());
+      else if (action === 'share') await shareAchievement(docOptions());
+      else await saveAchievement(docOptions());
+    } catch {
+      // user cancelled or unsupported
+    } finally {
+      setDocBusy(false);
+    }
   };
 
   const doRename = async () => {
@@ -76,7 +98,7 @@ export function AchievementRow({
   };
 
   const doDelete = async () => {
-    setMenu(false);
+    setConfirmOpen(false);
     try {
       await deleteAchievement(achievement.id);
       onChanged?.();
@@ -87,11 +109,7 @@ export function AchievementRow({
 
   return (
     <>
-      <Card
-        style={styles.card}
-        onPress={onPress}
-        onLongPress={editable ? () => setMenu(true) : undefined}
-      >
+      <Card style={styles.card} onPress={onPress} onLongPress={() => setMenu(true)}>
         <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <View style={styles.iconBox}>
             <Ionicons name="trophy-outline" size={20} color={colors.primaryDark} />
@@ -113,20 +131,89 @@ export function AchievementRow({
             <Text style={styles.sheetTitle} numberOfLines={1}>
               {achievement.title}
             </Text>
+            {editable ? (
+              <>
+                <MenuItem
+                  icon="create-outline"
+                  label={t('rename')}
+                  isRTL={isRTL}
+                  onPress={() => {
+                    setMenu(false);
+                    setName(achievement.title);
+                    setRenameOpen(true);
+                  }}
+                />
+                <MenuItem
+                  icon="swap-horizontal-outline"
+                  label={t('moveTo')}
+                  isRTL={isRTL}
+                  onPress={openMove}
+                />
+              </>
+            ) : null}
             <MenuItem
-              icon="create-outline"
-              label={t('rename')}
+              icon="print-outline"
+              label={t('print')}
               isRTL={isRTL}
-              onPress={() => {
-                setMenu(false);
-                setName(achievement.title);
-                setRenameOpen(true);
-              }}
+              onPress={() => runDocAction('print')}
             />
-            <MenuItem icon="swap-horizontal-outline" label={t('moveTo')} isRTL={isRTL} onPress={openMove} />
-            <MenuItem icon="trash-outline" label={t('delete')} isRTL={isRTL} onPress={doDelete} />
+            <MenuItem
+              icon="share-social-outline"
+              label={t('share')}
+              isRTL={isRTL}
+              onPress={() => runDocAction('share')}
+            />
+            <MenuItem
+              icon="download-outline"
+              label={t('saveToDevice')}
+              isRTL={isRTL}
+              onPress={() => runDocAction('save')}
+            />
+            {editable ? (
+              <MenuItem
+                icon="trash-outline"
+                label={t('delete')}
+                isRTL={isRTL}
+                onPress={() => {
+                  setMenu(false);
+                  setConfirmOpen(true);
+                }}
+              />
+            ) : null}
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Delete confirmation */}
+      <Modal
+        visible={confirmOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmOpen(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setConfirmOpen(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{t('confirmDeleteTitle')}</Text>
+            <Text style={styles.confirmMsg}>{t('confirmDeleteMsg')}</Text>
+            <Button title={t('delete')} icon="trash-outline" onPress={doDelete} />
+            <Button
+              title={t('cancel')}
+              variant="outline"
+              onPress={() => setConfirmOpen(false)}
+              style={{ marginTop: spacing.sm }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Building the printable sheet / PDF */}
+      <Modal visible={docBusy} transparent animationType="fade">
+        <View style={styles.busyBackdrop}>
+          <View style={styles.busyBox}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.busyText}>{t('loading')}</Text>
+          </View>
+        </View>
       </Modal>
 
       {/* Rename */}
@@ -232,4 +319,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuLabel: { fontSize: 16, fontWeight: '600', color: colors.textDark },
+  confirmMsg: {
+    fontSize: 14,
+    color: colors.mutedText,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 22,
+  },
+  busyBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  busyBox: {
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.md,
+    minWidth: 140,
+  },
+  busyText: { fontSize: 13, color: colors.mutedText },
 });

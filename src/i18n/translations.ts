@@ -138,6 +138,12 @@ export const translations = {
     close: 'إغلاق',
     search: 'بحث',
 
+    // Achievement action menu
+    print: 'طباعة',
+    saveToDevice: 'حفظ في الجهاز',
+    confirmDeleteTitle: 'حذف الإنجاز',
+    confirmDeleteMsg: 'هل أنت متأكد من حذف هذا الإنجاز نهائياً؟ لا يمكن التراجع عن هذا الإجراء.',
+
     // Account rules
     emailAlreadyRegistered:
       'هذا البريد الإلكتروني مسجّل مسبقاً. كل بريد يُسجَّل بصفة واحدة فقط (موظف أو مسؤول) — للتسجيل بصفة جديدة استخدم بريداً إلكترونياً آخر.',
@@ -422,6 +428,12 @@ export const translations = {
     add: 'Add',
     close: 'Close',
     search: 'Search',
+
+    print: 'Print',
+    saveToDevice: 'Save to device',
+    confirmDeleteTitle: 'Delete achievement',
+    confirmDeleteMsg:
+      'Are you sure you want to permanently delete this achievement? This cannot be undone.',
 
     emailAlreadyRegistered:
       'This email is already registered. Each email holds exactly one role (employee or admin) — use a different email to register a new role.',

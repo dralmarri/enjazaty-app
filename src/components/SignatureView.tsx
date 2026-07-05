@@ -33,7 +33,7 @@ function splitStrokes(d: string): string[] {
 }
 
 /** Parse ANY stored signature format into drawable path strings, or null. */
-function parseSignature(value: string): string[] | null {
+export function parseSignature(value: string): string[] | null {
   try {
     let parsed: unknown = JSON.parse(value);
     if (typeof parsed === 'string') {
@@ -62,7 +62,7 @@ function parseSignature(value: string): string[] | null {
 }
 
 /** Compute a fitting viewBox "minX minY width height" from SVG path strings. */
-function computeViewBox(paths: string[]): string {
+export function computeViewBox(paths: string[]): string {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
