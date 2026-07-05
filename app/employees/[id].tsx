@@ -19,9 +19,9 @@ import {
   SectionTitle,
 } from '@/components';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfile, listAchievements, listRootFolders } from '@/lib/api';
+import { getProfile, listAchievements, listRootFolders, listSupervisions } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Folder, UserProfile } from '@/types/database';
+import type { Achievement, Folder, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EmployeeProfileScreen() {
@@ -30,6 +30,9 @@ export default function EmployeeProfileScreen() {
   const [employee, setEmployee] = useState<UserProfile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [workspaceTeam, setWorkspaceTeam] = useState<
+    (Supervision & { subordinate: UserProfile })[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [addMenu, setAddMenu] = useState(false);
 
@@ -37,14 +40,20 @@ export default function EmployeeProfileScreen() {
     if (!id) return;
     setLoading(true);
     try {
-      const [emp, achs, fdrs] = await Promise.all([
+      const [emp, achs, fdrs, subs] = await Promise.all([
         getProfile(id),
         listAchievements(id),
         listRootFolders(id),
+        listSupervisions(id).catch(() => []),
       ]);
       setEmployee(emp);
       setAchievements(achs);
       setFolders(fdrs);
+      // Mirror the user's OWN organisation exactly: subordinates classified
+      // into folders appear inside those folders (folder screen), so here we
+      // list only the ones placed directly in his workspace — this keeps the
+      // whole chain reachable (A → B → C → …) without duplicating anyone.
+      setWorkspaceTeam(subs.filter((s) => s.placement !== 'folder' || !s.folder_id));
     } finally {
       setLoading(false);
     }
@@ -95,10 +104,47 @@ export default function EmployeeProfileScreen() {
         </View>
       </Card>
 
+      {/* Subordinates placed directly in this user's WORKSPACE (not inside a
+          folder) — without this section they would be unreachable from above.
+          Folder-classified subordinates appear inside their folders instead
+          (exactly like the user's own account, no duplication). */}
+      {workspaceTeam.length > 0 ? (
+        <>
+          <SectionTitle title={t('workspaceEmployees')} />
+          {workspaceTeam.map((it) => (
+            <Card
+              key={it.id}
+              style={styles.achCard}
+              onPress={() => router.push(`/employees/${it.subordinate.id}`)}
+            >
+              <View style={[styles.achRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Avatar
+                  name={it.subordinate.full_name}
+                  uri={it.subordinate.avatar_url}
+                  size={40}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.achTitle} numberOfLines={1}>
+                    {it.subordinate.full_name}
+                  </Text>
+                  <Text style={styles.achDate}>
+                    {it.subordinate.job_title || it.subordinate.user_code}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={18}
+                  color={colors.mutedText}
+                />
+              </View>
+            </Card>
+          ))}
+        </>
+      ) : null}
+
       {/* Employee folders — supervisor can open them to browse files.
-          Subordinates of a sub-admin are browsed NATURALLY through these
-          folders and classifications (no separate team list — avoids
-          duplicating content). */}
+          Subordinates classified INTO folders appear inside these folders,
+          exactly as organised in the user's own account. */}
       {folders.length > 0 ? (
         <>
           <SectionTitle title={t('employeeFolders')} />

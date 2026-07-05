@@ -138,6 +138,9 @@ export const translations = {
     close: 'إغلاق',
     search: 'بحث',
 
+    // Org tree
+    workspaceEmployees: 'الموظفون في مساحة عمله',
+
     // Embedded document editor
     docEditorTitle: 'تحرير المستند',
     docEditorHint: 'التعديلات تُحفظ تلقائياً في نفس الملف',
@@ -415,6 +418,8 @@ export const translations = {
     add: 'Add',
     close: 'Close',
     search: 'Search',
+
+    workspaceEmployees: 'Employees in their workspace',
 
     docEditorTitle: 'Edit Document',
     docEditorHint: 'Changes are saved automatically to the same file',
