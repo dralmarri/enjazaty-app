@@ -12,13 +12,20 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   deleteAchievement,
+  listAttachments,
   listFolders,
   updateAchievementFolder,
   updateAchievementTitle,
 } from '@/lib/api';
 import { printAchievement, saveAchievement, shareAchievement } from '@/lib/achievementDoc';
+import {
+  originalFileName,
+  printAttachment,
+  saveAttachment,
+  shareAttachment,
+} from '@/lib/achievementFiles';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Folder } from '@/types/database';
+import type { Achievement, Attachment, Folder } from '@/types/database';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { Card } from './Card';
@@ -59,20 +66,57 @@ export function AchievementRow({
     setMoveOpen(true);
   };
 
-  const docOptions = () => ({ achievement, t, language, isRTL });
+  type FileAction = 'print' | 'share' | 'save';
+  const [filePick, setFilePick] = useState<{ action: FileAction; files: Attachment[] } | null>(
+    null
+  );
 
-  const runDocAction = async (action: 'print' | 'share' | 'save') => {
-    setMenu(false);
+  const applyToFile = async (action: FileAction, att: Attachment) => {
     setDocBusy(true);
     try {
-      if (action === 'print') await printAchievement(docOptions());
-      else if (action === 'share') await shareAchievement(docOptions());
-      else await saveAchievement(docOptions());
+      if (action === 'print') await printAttachment(att);
+      else if (action === 'share') await shareAttachment(att);
+      else await saveAttachment(att);
     } catch {
       // user cancelled or unsupported
     } finally {
       setDocBusy(false);
     }
+  };
+
+  // Print/Share/Save always target the achievement's ORIGINAL file(s):
+  // one file → act on it; many → let the user pick; none → text summary sheet.
+  const runDocAction = async (action: FileAction) => {
+    setMenu(false);
+    setDocBusy(true);
+    let attachments: Attachment[] = [];
+    try {
+      attachments = await listAttachments(achievement.id);
+    } catch {
+      attachments = [];
+    }
+    const files = attachments.filter((a) => a.type !== 'link');
+    if (files.length === 0) {
+      // No real file — fall back to a printable summary of the achievement.
+      try {
+        const opts = { achievement, t, language, isRTL };
+        if (action === 'print') await printAchievement(opts);
+        else if (action === 'share') await shareAchievement(opts);
+        else await saveAchievement(opts);
+      } catch {
+        // ignore
+      } finally {
+        setDocBusy(false);
+      }
+      return;
+    }
+    if (files.length === 1) {
+      await applyToFile(action, files[0]);
+      return;
+    }
+    // Multiple files → choose which one.
+    setDocBusy(false);
+    setFilePick({ action, files });
   };
 
   const doRename = async () => {
@@ -202,6 +246,39 @@ export function AchievementRow({
               onPress={() => setConfirmOpen(false)}
               style={{ marginTop: spacing.sm }}
             />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Choose which file when the achievement has several attachments */}
+      <Modal
+        visible={!!filePick}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFilePick(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setFilePick(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>
+              {filePick?.action === 'print'
+                ? t('print')
+                : filePick?.action === 'share'
+                ? t('share')
+                : t('saveToDevice')}
+            </Text>
+            {filePick?.files.map((f) => (
+              <MenuItem
+                key={f.id}
+                icon={f.type === 'image' ? 'image-outline' : 'document-outline'}
+                label={originalFileName(f)}
+                isRTL={isRTL}
+                onPress={() => {
+                  const action = filePick.action;
+                  setFilePick(null);
+                  applyToFile(action, f);
+                }}
+              />
+            ))}
           </Pressable>
         </Pressable>
       </Modal>

@@ -146,9 +146,35 @@ function safeFileName(title: string): string {
   return `${title.replace(/[^\w؀-ۿ-]+/g, '-').slice(0, 40) || 'achievement'}.pdf`;
 }
 
-/** Open the system print dialog for this achievement. */
+/** Open the system print dialog for this achievement's summary sheet. */
 export async function printAchievement(opts: AchievementDocOptions): Promise<void> {
   const body = await buildBody(opts);
+  if (Platform.OS === 'web') {
+    // Print ONLY the sheet in an isolated iframe — never the app page.
+    const iframe = document.createElement('iframe');
+    Object.assign(iframe.style, {
+      position: 'fixed',
+      right: '0',
+      bottom: '0',
+      width: '0',
+      height: '0',
+      border: '0',
+    });
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(fullHtml(body, opts.isRTL));
+      doc.close();
+      const done = () => setTimeout(() => iframe.remove(), 1000);
+      iframe.contentWindow?.addEventListener('afterprint', done);
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      }, 300);
+    }
+    return;
+  }
   await Print.printAsync({ html: fullHtml(body, opts.isRTL) });
 }
 
