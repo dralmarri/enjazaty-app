@@ -138,6 +138,10 @@ export const translations = {
     close: 'إغلاق',
     search: 'بحث',
 
+    // Account rules
+    emailAlreadyRegistered:
+      'هذا البريد الإلكتروني مسجّل مسبقاً. كل بريد يُسجَّل بصفة واحدة فقط (موظف أو مسؤول) — للتسجيل بصفة جديدة استخدم بريداً إلكترونياً آخر.',
+
     // Org tree
     workspaceEmployees: 'الموظفون في مساحة عمله',
 
@@ -418,6 +422,9 @@ export const translations = {
     add: 'Add',
     close: 'Close',
     search: 'Search',
+
+    emailAlreadyRegistered:
+      'This email is already registered. Each email holds exactly one role (employee or admin) — use a different email to register a new role.',
 
     workspaceEmployees: 'Employees in their workspace',
 

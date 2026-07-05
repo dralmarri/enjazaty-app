@@ -133,7 +133,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: { data: { role } },
       });
-      if (error) throw error;
+      // One email = one account = one role, forever. Signing up again with a
+      // registered email must fail with a clear, translatable error.
+      if (error) {
+        if (/already.*registered|registered.*already/i.test(error.message)) {
+          throw new Error('EMAIL_TAKEN');
+        }
+        throw error;
+      }
+      // With confirmations enabled Supabase obfuscates duplicates: it
+      // "succeeds" but returns a user with no identities.
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        throw new Error('EMAIL_TAKEN');
+      }
       // If email confirmation is enabled there is no session yet → verify OTP.
       return { needsVerification: !data.session };
     },

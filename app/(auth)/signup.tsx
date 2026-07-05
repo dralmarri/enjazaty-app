@@ -50,7 +50,13 @@ export default function SignupScreen() {
         router.replace('/(auth)/complete-profile');
       }
     } catch (e: any) {
-      setError(e?.message ?? t('error'));
+      // One email = one role: a registered email can never sign up again
+      // (promotion to admin requires a NEW email).
+      if (e?.message === 'EMAIL_TAKEN') {
+        setError(t('emailAlreadyRegistered'));
+      } else {
+        setError(e?.message ?? t('error'));
+      }
     } finally {
       setLoading(false);
     }
