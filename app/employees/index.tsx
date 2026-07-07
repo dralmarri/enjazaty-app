@@ -33,7 +33,7 @@ import type { Folder, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EmployeesScreen() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { t, isRTL } = useLanguage();
 
   const [items, setItems] = useState<(Supervision & { subordinate: UserProfile })[]>([]);
@@ -153,12 +153,16 @@ export default function EmployeesScreen() {
       <Header
         title={t('employees')}
         showBack
-        rightIcon="person-add"
-        onRightPress={() => setModalOpen(true)}
+        rightIcon={isAdmin ? 'person-add' : undefined}
+        onRightPress={isAdmin ? () => setModalOpen(true) : undefined}
       />
 
       {items.length === 0 ? (
-        <EmptyState icon="people-outline" message={t('noEmployees')} hint={t('addByUserId')} />
+        <EmptyState
+          icon="people-outline"
+          message={t('noEmployees')}
+          hint={isAdmin ? t('addByUserId') : undefined}
+        />
       ) : (
         items.map((item) => (
           <Card

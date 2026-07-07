@@ -19,6 +19,8 @@ interface SelectProps {
   value: string | null;
   options: SelectOption[];
   onChange: (value: string) => void;
+  /** Shows a red asterisk next to the label to mark a required field. */
+  required?: boolean;
 }
 
 export function Select({
@@ -27,6 +29,7 @@ export function Select({
   value,
   options,
   onChange,
+  required,
 }: SelectProps) {
   const { isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -37,6 +40,7 @@ export function Select({
       {label ? (
         <Text style={[styles.label, { textAlign: isRTL ? 'right' : 'left' }]}>
           {label}
+          {required ? <Text style={styles.required}> *</Text> : null}
         </Text>
       ) : null}
       <Pressable
@@ -97,6 +101,7 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     marginBottom: spacing.xs,
   },
+  required: { color: colors.danger },
   field: {
     alignItems: 'center',
     justifyContent: 'space-between',

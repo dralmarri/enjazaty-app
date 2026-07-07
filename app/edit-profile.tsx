@@ -69,17 +69,23 @@ export default function EditProfileScreen() {
     <Screen>
       <Header title={t('completeYourProfile')} showBack />
 
-      <Input label={t('fullName')} value={fullName} onChangeText={setFullName} />
+      <Input label={t('fullName')} value={fullName} onChangeText={setFullName} required />
 
-      <Input label={t('employer')} value={employer} onChangeText={setEmployer} />
+      <Input label={t('employer')} value={employer} onChangeText={setEmployer} required />
 
       <Input
         label={t('administration')}
         value={administration}
         onChangeText={setAdministration}
+        required
       />
 
-      <Input label={t('workCenter')} value={workCenter} onChangeText={setWorkCenter} />
+      <Input
+        label={t('workCenter')}
+        value={workCenter}
+        onChangeText={setWorkCenter}
+        required
+      />
 
       <Select
         label={t('educationalRegion')}

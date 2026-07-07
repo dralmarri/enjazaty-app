@@ -15,15 +15,18 @@ import { colors, radius, spacing } from '@/theme/colors';
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
+  /** Shows a red asterisk next to the label to mark a required field. */
+  required?: boolean;
 }
 
-export function Input({ label, error, style, ...rest }: InputProps) {
+export function Input({ label, error, required, style, ...rest }: InputProps) {
   const { isRTL } = useLanguage();
   return (
     <View style={styles.wrapper}>
       {label ? (
         <Text style={[styles.label, { textAlign: isRTL ? 'right' : 'left' }]}>
           {label}
+          {required ? <Text style={styles.required}> *</Text> : null}
         </Text>
       ) : null}
       <TextInput
@@ -49,6 +52,7 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     marginBottom: spacing.xs,
   },
+  required: { color: colors.danger },
   input: {
     backgroundColor: colors.softBackground,
     borderWidth: 1,
