@@ -86,6 +86,10 @@ export default function NewAchievementScreen() {
 
   /* -------------------------- Attachment pickers ------------------------- */
 
+  // Videos aren't compressed automatically (not practical client-side across
+  // web/iOS/Android), so a duration cap keeps storage costs in check instead.
+  const MAX_VIDEO_SECONDS = 180;
+
   const pickImage = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -93,6 +97,14 @@ export default function NewAchievementScreen() {
     });
     if (!res.canceled && res.assets[0]) {
       const asset = res.assets[0];
+      if (
+        asset.type === 'video' &&
+        asset.duration &&
+        asset.duration / 1000 > MAX_VIDEO_SECONDS
+      ) {
+        setError(t('videoTooLong'));
+        return;
+      }
       setAttachments((prev) => [
         ...prev,
         {
