@@ -29,7 +29,15 @@ export function GlobalTabBar() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+    <View
+      style={[
+        styles.bar,
+        // Lift the row off the very bottom edge: always add a base gap on top
+        // of the device safe-area inset (home indicator), so labels never hug
+        // the bottom of the screen.
+        { paddingBottom: Math.max(insets.bottom, spacing.sm) + spacing.md },
+      ]}
+    >
       {TABS.map((tab) => {
         const active = pathname === tab.href;
         const color = active ? colors.primaryDark : colors.mutedText;
@@ -55,7 +63,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
   },
   item: { flex: 1, alignItems: 'center', gap: 2 },
   label: { fontSize: 11, fontWeight: '600' },
