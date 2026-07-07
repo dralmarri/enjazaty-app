@@ -143,3 +143,5 @@ enjazaty-app/
 ---
 
 تم بناؤه بحب لإدارة الإنجازات. · Built to celebrate achievements.
+
+# Web deploys automatically via GitHub Actions (.github/workflows/deploy-web.yml)
