@@ -57,6 +57,7 @@ export async function updateProfile(
       | 'educational_region'
       | 'work_center'
       | 'administration'
+      | 'employer'
     >
   >
 ): Promise<void> {

@@ -21,8 +21,9 @@ interface CompleteProfileParams {
   fullName: string;
   jobTitle?: string;
   educationalRegion?: string;
-  workCenter?: string; // employees
-  administration?: string; // admins
+  workCenter?: string;
+  administration?: string;
+  employer?: string;
 }
 
 interface AuthContextValue {
@@ -176,6 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       educationalRegion,
       workCenter,
       administration,
+      employer,
     }: CompleteProfileParams) => {
       const user = session?.user;
       if (!user) throw new Error('No authenticated user');
@@ -191,6 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         educational_region: educationalRegion ?? null,
         work_center: workCenter ?? null,
         administration: administration ?? null,
+        employer: employer ?? null,
       });
       if (error) throw error;
       await loadProfile(user.id);

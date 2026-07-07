@@ -15,3 +15,4 @@ export { SignaturePad } from './SignaturePad';
 export { SignatureView } from './SignatureView';
 export { SignatureChooser } from './SignatureChooser';
 export { AchievementRow } from './AchievementRow';
+export { GlobalTabBar } from './GlobalTabBar';

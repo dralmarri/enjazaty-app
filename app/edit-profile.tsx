@@ -11,26 +11,38 @@ import { Button, Header, Input, Screen, Select } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { updateProfile } from '@/lib/api';
-import { EDUCATIONAL_REGIONS } from '@/lib/constants';
+import { EDUCATIONAL_REGIONS, NO_REGION } from '@/lib/constants';
 import { colors, spacing } from '@/theme/colors';
 
 export default function EditProfileScreen() {
-  const { profile, isAdmin, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { t } = useLanguage();
 
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
-  const [region, setRegion] = useState<string | null>(profile?.educational_region ?? null);
+  const [region, setRegion] = useState<string | null>(
+    profile?.educational_region ?? NO_REGION
+  );
+  const [employer, setEmployer] = useState(profile?.employer ?? '');
   const [workCenter, setWorkCenter] = useState(profile?.work_center ?? '');
   const [administration, setAdministration] = useState(profile?.administration ?? '');
   const [jobTitle, setJobTitle] = useState(profile?.job_title ?? '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const regionOptions = EDUCATIONAL_REGIONS.map((r) => ({ label: r, value: r }));
+  const regionOptions = [
+    { label: t('noRegion'), value: NO_REGION },
+    ...EDUCATIONAL_REGIONS.map((r) => ({ label: r, value: r })),
+  ];
 
   const onSave = async () => {
     setError(null);
-    if (!profile || !fullName.trim()) {
+    if (
+      !profile ||
+      !fullName.trim() ||
+      !employer.trim() ||
+      !administration.trim() ||
+      !workCenter.trim()
+    ) {
       setError(t('required'));
       return;
     }
@@ -39,9 +51,10 @@ export default function EditProfileScreen() {
       await updateProfile(profile.id, {
         full_name: fullName.trim(),
         job_title: jobTitle.trim() || null,
-        educational_region: region,
-        work_center: !isAdmin ? workCenter.trim() || null : null,
-        administration: isAdmin ? administration.trim() || null : null,
+        educational_region: region && region !== NO_REGION ? region : null,
+        employer: employer.trim(),
+        work_center: workCenter.trim(),
+        administration: administration.trim(),
       });
       await refreshProfile();
       router.back();
@@ -58,6 +71,16 @@ export default function EditProfileScreen() {
 
       <Input label={t('fullName')} value={fullName} onChangeText={setFullName} />
 
+      <Input label={t('employer')} value={employer} onChangeText={setEmployer} />
+
+      <Input
+        label={t('administration')}
+        value={administration}
+        onChangeText={setAdministration}
+      />
+
+      <Input label={t('workCenter')} value={workCenter} onChangeText={setWorkCenter} />
+
       <Select
         label={t('educationalRegion')}
         placeholder={t('selectRegion')}
@@ -65,16 +88,6 @@ export default function EditProfileScreen() {
         options={regionOptions}
         onChange={setRegion}
       />
-
-      {isAdmin ? (
-        <Input
-          label={t('administration')}
-          value={administration}
-          onChangeText={setAdministration}
-        />
-      ) : (
-        <Input label={t('workCenter')} value={workCenter} onChangeText={setWorkCenter} />
-      )}
 
       <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} />
 

@@ -3,13 +3,57 @@
  * handler root, safe-area context, and the Expo Router stack.
  */
 import React from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import { LanguageProvider } from '@/context/LanguageContext';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { GlobalTabBar } from '@/components';
 import { colors } from '@/theme/colors';
+
+/** Renders the router stack plus the persistent bottom tab bar (shown only
+ * once the user is signed in with a complete profile, on every screen). */
+function AppShell() {
+  const { session, profile, loading } = useAuth();
+  const showTabBar = !loading && !!session && !!profile;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="language" />
+          <Stack.Screen name="role" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="achievement" />
+          <Stack.Screen name="employees" />
+          <Stack.Screen name="members" />
+          <Stack.Screen name="folder" />
+          <Stack.Screen name="evaluate" />
+          <Stack.Screen name="edit-profile" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="terms" />
+          <Stack.Screen name="contact" />
+          <Stack.Screen name="report" />
+          <Stack.Screen name="signatures" />
+          <Stack.Screen name="sign" />
+          <Stack.Screen name="doc" />
+        </Stack>
+      </View>
+      {showTabBar ? <GlobalTabBar /> : null}
+    </View>
+  );
+}
 
 export default function RootLayout() {
   return (
@@ -18,33 +62,7 @@ export default function RootLayout() {
         <LanguageProvider>
           <AuthProvider>
             <StatusBar style="dark" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
-                animation: 'slide_from_right',
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="language" />
-              <Stack.Screen name="role" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="achievement" />
-              <Stack.Screen name="employees" />
-              <Stack.Screen name="members" />
-              <Stack.Screen name="folder" />
-              <Stack.Screen name="evaluate" />
-              <Stack.Screen name="edit-profile" />
-              <Stack.Screen name="notifications" />
-              <Stack.Screen name="privacy" />
-              <Stack.Screen name="terms" />
-              <Stack.Screen name="contact" />
-              <Stack.Screen name="report" />
-              <Stack.Screen name="signatures" />
-              <Stack.Screen name="sign" />
-              <Stack.Screen name="doc" />
-            </Stack>
+            <AppShell />
           </AuthProvider>
         </LanguageProvider>
       </SafeAreaProvider>

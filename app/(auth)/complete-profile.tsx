@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { Button, Header, Input, Screen, Select } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { EDUCATIONAL_REGIONS } from '@/lib/constants';
+import { EDUCATIONAL_REGIONS, NO_REGION } from '@/lib/constants';
 import { colors, spacing } from '@/theme/colors';
 
 export default function CompleteProfileScreen() {
@@ -19,17 +19,21 @@ export default function CompleteProfileScreen() {
 
   const [fullName, setFullName] = useState('');
   const [region, setRegion] = useState<string | null>(null);
-  const [workCenter, setWorkCenter] = useState(''); // employee
-  const [administration, setAdministration] = useState(''); // admin
+  const [employer, setEmployer] = useState('');
+  const [workCenter, setWorkCenter] = useState('');
+  const [administration, setAdministration] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const regionOptions = EDUCATIONAL_REGIONS.map((r) => ({ label: r, value: r }));
+  const regionOptions = [
+    { label: t('noRegion'), value: NO_REGION },
+    ...EDUCATIONAL_REGIONS.map((r) => ({ label: r, value: r })),
+  ];
 
   const onSave = async () => {
     setError(null);
-    if (!fullName.trim() || !region) {
+    if (!fullName.trim() || !employer.trim() || !administration.trim() || !workCenter.trim()) {
       setError(t('required'));
       return;
     }
@@ -38,9 +42,10 @@ export default function CompleteProfileScreen() {
       await completeProfile({
         fullName: fullName.trim(),
         jobTitle: jobTitle.trim() || undefined,
-        educationalRegion: region,
-        workCenter: !isAdmin ? workCenter.trim() || undefined : undefined,
-        administration: isAdmin ? administration.trim() || undefined : undefined,
+        educationalRegion: region && region !== NO_REGION ? region : undefined,
+        employer: employer.trim(),
+        workCenter: workCenter.trim(),
+        administration: administration.trim(),
       });
       router.replace('/(tabs)/workspace');
     } catch (e: any) {
@@ -59,6 +64,16 @@ export default function CompleteProfileScreen() {
 
       <Input label={t('fullName')} value={fullName} onChangeText={setFullName} />
 
+      <Input label={t('employer')} value={employer} onChangeText={setEmployer} />
+
+      <Input
+        label={t('administration')}
+        value={administration}
+        onChangeText={setAdministration}
+      />
+
+      <Input label={t('workCenter')} value={workCenter} onChangeText={setWorkCenter} />
+
       <Select
         label={t('educationalRegion')}
         placeholder={t('selectRegion')}
@@ -66,20 +81,6 @@ export default function CompleteProfileScreen() {
         options={regionOptions}
         onChange={setRegion}
       />
-
-      {isAdmin ? (
-        <Input
-          label={t('administration')}
-          value={administration}
-          onChangeText={setAdministration}
-        />
-      ) : (
-        <Input
-          label={t('workCenter')}
-          value={workCenter}
-          onChangeText={setWorkCenter}
-        />
-      )}
 
       <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} />
 

@@ -22,6 +22,8 @@ export interface UserProfile {
   work_center: string | null;
   /** Admin's administration unit (الإدارة التابع لها). */
   administration: string | null;
+  /** Employer / organization the user belongs to (جهة العمل). */
+  employer: string | null;
   /** For employees: the admin (manager) who owns/created them. */
   manager_id: string | null;
   created_at: string;

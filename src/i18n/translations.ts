@@ -180,8 +180,10 @@ export const translations = {
     completeYourProfile: 'استكمال البيانات',
     educationalRegion: 'المنطقة التعليمية',
     selectRegion: 'اختر المنطقة التعليمية',
+    noRegion: 'لا يوجد',
     workCenter: 'مركز العمل',
     administration: 'الإدارة التابع لها',
+    employer: 'جهة العمل',
     saveAndContinue: 'حفظ ومتابعة',
 
     // Home / dates
@@ -465,8 +467,10 @@ export const translations = {
     completeYourProfile: 'Complete your details',
     educationalRegion: 'Educational region',
     selectRegion: 'Select educational region',
+    noRegion: 'None',
     workCenter: 'Work center',
     administration: 'Administration',
+    employer: 'Employer',
     saveAndContinue: 'Save and continue',
 
     birthDate: 'Date',
