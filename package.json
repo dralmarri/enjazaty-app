@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "export": "expo export",
-    "export:web": "expo export --platform web",
+    "export:web": "expo export --platform web && node scripts/inject-pwa.js",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit"
   },

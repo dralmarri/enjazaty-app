@@ -78,7 +78,7 @@ This is 95% of updates. The assistant does this:
 2. **Verify** before committing (always):
    ```bash
    npx tsc --noEmit            # types must pass (exit 0)
-   npx expo export --platform web   # must end with "App exported to: dist"
+   npx expo export --platform web && node scripts/inject-pwa.js   # must end with "App exported to: dist"
    ```
 3. Commit and push to the working branch:
    ```bash
@@ -162,7 +162,12 @@ No Xcode needed — EAS builds in the cloud.
 ## 7. Assistant working agreement
 
 - Match the existing code style; keep Arabic + English strings in sync.
-- ALWAYS run `npx tsc --noEmit` and `npx expo export --platform web` before pushing.
+- ALWAYS run `npx tsc --noEmit` and `npx expo export --platform web && node scripts/inject-pwa.js` before pushing.
+- The site is a PWA (`public/manifest.json`, `public/sw.js`, `public/icons/`, `scripts/inject-pwa.js`).
+  Because `web.output` is `"single"`, `app/+html.tsx` is NOT used for the production HTML — Expo Router
+  emits a fixed generic `dist/index.html` in single mode, so `scripts/inject-pwa.js` patches PWA tags
+  (manifest link, theme-color, apple-touch-icon, service worker registration) into it after export.
+  Keep this script in sync with any future `app/+html.tsx` changes since single-mode ignores that file.
 - Commit to `claude/injazati-full-app-tzdu5l` with a clear message; the push
   publishes the site automatically.
 - When a change needs the owner to do something (run SQL, add a secret, build for
