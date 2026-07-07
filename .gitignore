@@ -35,3 +35,6 @@ yarn-error.*
 .idea/
 .vscode/
 *.log
+
+# Local Claude Code tooling config (dev server launch settings, not app code)
+.claude/
