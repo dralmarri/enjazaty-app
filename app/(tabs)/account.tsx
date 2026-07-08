@@ -142,8 +142,8 @@ export default function AccountScreen() {
         <InfoRow icon="briefcase-outline" label={t('jobTitle')} value={profile?.job_title || '—'} isRTL={isRTL} border />
         <InfoRow
           icon="business-outline"
-          label={t('educationalRegion')}
-          value={profile?.educational_region || '—'}
+          label={t('workCenter')}
+          value={profile?.work_center || '—'}
           isRTL={isRTL}
         />
       </Card>

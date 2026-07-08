@@ -259,13 +259,14 @@ export default function NewAchievementScreen() {
     }
   };
 
-  // The main file is chosen via the home "Add → File" flow, so here we only
-  // offer adding an extra link as an attachment.
   const attachActions: {
     label: string;
     icon: keyof typeof Ionicons.glyphMap;
     onPress: () => void;
   }[] = [
+    { label: t('fromLibrary'), icon: 'images-outline', onPress: pickImage },
+    { label: t('fromCamera'), icon: 'camera-outline', onPress: pickCamera },
+    { label: t('fromFiles'), icon: 'document-outline', onPress: pickFile },
     { label: t('addLink'), icon: 'link-outline', onPress: () => setLinkModal(true) },
   ];
 
@@ -415,9 +416,10 @@ const styles = StyleSheet.create({
   folderChipActive: { borderColor: colors.primary, backgroundColor: colors.softBackground },
   folderChipText: { fontSize: 13, fontWeight: '600', color: colors.mutedText },
   folderChipTextActive: { color: colors.primaryDark },
-  attachRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  attachRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.md },
   attachBtn: {
-    flex: 1,
+    minWidth: '45%',
+    flexGrow: 1,
     alignItems: 'center',
     gap: 6,
     paddingVertical: spacing.lg,

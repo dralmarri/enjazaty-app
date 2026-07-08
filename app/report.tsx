@@ -126,6 +126,33 @@ export default function ReportScreen() {
   const onPrint = async () => {
     setPrinting(true);
     try {
+      if (Platform.OS === 'web') {
+        // Build the same styled PDF used for sharing, then print that PDF
+        // (instead of the browser printing the on-screen app page).
+        const { htmlToPdfBlob } = await import('@/lib/webpdf');
+        const blob = await htmlToPdfBlob(buildBody());
+        const url = URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        Object.assign(iframe.style, {
+          position: 'fixed',
+          right: '0',
+          bottom: '0',
+          width: '0',
+          height: '0',
+          border: 'none',
+        });
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        };
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }, 60000);
+        return;
+      }
       await Print.printAsync({ html: buildHtml() });
     } catch {
       // user cancelled or unsupported
