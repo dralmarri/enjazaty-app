@@ -49,7 +49,7 @@ export default function SignPdfScreen() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageCount, setPageCount] = useState(1);
   const [pageImage, setPageImage] = useState<string | null>(null);
-  const [pageDims, setPageDims] = useState({ widthPt: 612, heightPt: 792, canvasW: 700, canvasH: 907 });
+  const [pageDims, setPageDims] = useState({ widthPt: 612, heightPt: 792 });
   const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
 
   // Transform state (kept in a ref; force re-render on change) — same shape
@@ -95,8 +95,6 @@ export default function SignPdfScreen() {
       setPageDims({
         widthPt: rendered.pageWidthPt,
         heightPt: rendered.pageHeightPt,
-        canvasW: rendered.canvasWidth,
-        canvasH: rendered.canvasHeight,
       });
     } catch (e: any) {
       setError(e?.message ?? t('error'));
@@ -115,10 +113,14 @@ export default function SignPdfScreen() {
   const bodyPan = useMemo(
     () =>
       PanResponder.create({
+        // No capture handlers here: the resize/rotate handles are children of
+        // this same box, and a capturing parent would claim every touch in
+        // the capture phase (top-down) before a child handle ever gets asked
+        // in the bubble phase — silently turning every resize/rotate drag
+        // into a plain move. Bubble-only lets the actual touch target (a
+        // handle, or the body) claim the responder first.
         onStartShouldSetPanResponder: () => true,
-        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderTerminationRequest: () => false,
         onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
@@ -197,7 +199,10 @@ export default function SignPdfScreen() {
         pageIndex,
         signaturePngDataUrl: signaturePng,
         box: { x: b.x, y: b.y, w: b.w, h, angleDeg: b.angle },
-        canvasWidth: pageDims.canvasW,
+        // NOT pageDims.canvasW (the hidden 2x-resolution raster used only for
+        // a crisper preview render) — box.x/y/w live in the on-screen box's
+        // own coordinate space (canvasW), which is what must scale to points.
+        canvasWidth: canvasW,
         pageWidthPt: pageDims.widthPt,
         pageHeightPt: pageDims.heightPt,
       });

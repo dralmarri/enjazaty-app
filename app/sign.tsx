@@ -86,10 +86,14 @@ export default function SignScreen() {
   const bodyPan = useMemo(
     () =>
       PanResponder.create({
+        // No capture handlers here: the resize/rotate handles are children of
+        // this same box, and a capturing parent would claim every touch in
+        // the capture phase (top-down) before a child handle ever gets asked
+        // in the bubble phase — silently turning every resize/rotate drag
+        // into a plain move. Bubble-only lets the actual touch target (a
+        // handle, or the body) claim the responder first.
         onStartShouldSetPanResponder: () => true,
-        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderTerminationRequest: () => false,
         onShouldBlockNativeResponder: () => true,
         onPanResponderGrant: () => {
