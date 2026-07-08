@@ -148,10 +148,12 @@ export async function stampSignatureOnPdf(opts: StampOptions): Promise<Uint8Arra
   const centerXPt = (box.x + box.w / 2) * scale;
   const centerYPt = pageHeightPt - (box.y + box.h / 2) * scale; // flip to PDF's y-up origin
 
-  // A clockwise rotation in a y-down screen is visually equivalent to the
-  // same-signed counter-clockwise rotation in a y-up PDF page once the y
-  // flip above is applied, so the angle is reused as-is.
-  const angleRad = (box.angleDeg * Math.PI) / 180;
+  // Screen `rotate(Ndeg)` is clockwise in a y-down space; pdf-lib's rotate is
+  // counter-clockwise in a y-up space. The y-flip above does NOT cancel that
+  // difference out (confirmed empirically: signature landed mirrored), so
+  // the angle must be negated to reproduce the same visual rotation.
+  const pdfAngleDeg = -box.angleDeg;
+  const angleRad = (pdfAngleDeg * Math.PI) / 180;
   const halfW = widthPt / 2;
   const halfH = heightPt / 2;
   const rotatedHalfX = halfW * Math.cos(angleRad) - halfH * Math.sin(angleRad);
@@ -165,7 +167,7 @@ export async function stampSignatureOnPdf(opts: StampOptions): Promise<Uint8Arra
     y,
     width: widthPt,
     height: heightPt,
-    rotate: degrees(box.angleDeg),
+    rotate: degrees(pdfAngleDeg),
   });
 
   return pdfDoc.save();
