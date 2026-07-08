@@ -340,6 +340,14 @@ export async function createAttachment(input: {
   return data as Attachment;
 }
 
+export async function updateAttachment(
+  id: string,
+  patch: Partial<Pick<Attachment, 'url' | 'size' | 'mime_type'>>
+): Promise<void> {
+  const { error } = await supabase.from('attachments').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
 /* ---------------------------------- Notes -------------------------------- */
 
 export async function listNotes(params: {

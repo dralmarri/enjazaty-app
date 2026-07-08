@@ -32,3 +32,15 @@ export function isEditableDocument(att: {
 }): boolean {
   return att.type === 'file' && EDITABLE_EXTENSIONS.has(attachmentExtension(att));
 }
+
+/** True when this attachment is a PDF (by mime type, falling back to extension). */
+export function isPdfAttachment(att: {
+  type: string;
+  name?: string | null;
+  url: string;
+  mime_type?: string | null;
+}): boolean {
+  if (att.type !== 'file') return false;
+  if (att.mime_type) return att.mime_type === 'application/pdf';
+  return attachmentExtension(att) === 'pdf';
+}

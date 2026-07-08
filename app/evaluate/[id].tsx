@@ -9,7 +9,7 @@
  *    (it never reopens). The report appears in the subordinate's Activity.
  */
 import React, { useCallback, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
@@ -34,7 +34,7 @@ import {
   listAttachments,
   supervises,
 } from '@/lib/api';
-import { isEditableDocument } from '@/lib/documents';
+import { isEditableDocument, isPdfAttachment } from '@/lib/documents';
 import { formatDate } from '@/lib/format';
 import type { Achievement, Attachment, Evaluation } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
@@ -187,6 +187,18 @@ export default function EvaluateScreen() {
                       router.push(
                         `/sign?image=${encodeURIComponent(att.url)}&achievement=${achievement.id}`
                       )
+                    }
+                    hitSlop={6}
+                  >
+                    <Ionicons name="create-outline" size={18} color={colors.onPrimary} />
+                  </Pressable>
+                ) : null}
+                {/* Supervisor signs & approves a PDF directly (web only for now) */}
+                {isPdfAttachment(att) && canEvaluate && Platform.OS === 'web' ? (
+                  <Pressable
+                    style={styles.signBtn}
+                    onPress={() =>
+                      router.push(`/sign-pdf?attachment=${att.id}&achievement=${achievement.id}`)
                     }
                     hitSlop={6}
                   >

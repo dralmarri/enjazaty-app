@@ -91,3 +91,21 @@ export async function uploadFile(params: {
   const { data } = supabase.storage.from(ATTACHMENTS_BUCKET).getPublicUrl(path);
   return { url: data.publicUrl, path };
 }
+
+/**
+ * Best-effort delete of a previously-uploaded object, given its public URL
+ * (e.g. an attachment being replaced by a signed copy). Never throws — the
+ * old object is a minor storage-cleanup nicety, not something worth failing
+ * the caller's flow over.
+ */
+export async function deleteStorageObject(url: string): Promise<void> {
+  try {
+    const marker = `/object/public/${ATTACHMENTS_BUCKET}/`;
+    const idx = url.indexOf(marker);
+    if (idx === -1) return;
+    const path = decodeURIComponent(url.slice(idx + marker.length).split('?')[0]);
+    await supabase.storage.from(ATTACHMENTS_BUCKET).remove([path]);
+  } catch {
+    // ignore
+  }
+}

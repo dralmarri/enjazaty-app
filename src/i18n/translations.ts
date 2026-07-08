@@ -306,6 +306,7 @@ export const translations = {
     saving_doc: 'جاري الاعتماد...',
     pdfSignNote: 'اعتماد ملفات PDF قيد التطوير — يمكنك اعتماد الصور حالياً',
     signedDocument: 'مستند موقّع',
+    pageOf: 'صفحة {current} من {total}',
 
     // Folder employees
     folderEmployees: 'الموظفون في المجلد',
@@ -581,6 +582,7 @@ export const translations = {
     saving_doc: 'Approving...',
     pdfSignNote: 'PDF signing is coming soon — you can sign images now',
     signedDocument: 'Signed document',
+    pageOf: 'Page {current} of {total}',
 
     folderEmployees: 'Employees in folder',
   },
