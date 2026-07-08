@@ -117,6 +117,8 @@ export const translations = {
     // Notifications
     noNotifications: 'لا توجد إشعارات',
     markAllRead: 'تعليم الكل كمقروء',
+    confirmDeleteNotificationTitle: 'حذف الإشعار',
+    confirmDeleteNotificationMsg: 'هل أنت متأكد من حذف هذا الإشعار؟',
 
     // Account
     settings: 'الإعدادات',
@@ -414,6 +416,8 @@ export const translations = {
 
     noNotifications: 'No notifications',
     markAllRead: 'Mark all as read',
+    confirmDeleteNotificationTitle: 'Delete notification',
+    confirmDeleteNotificationMsg: 'Are you sure you want to delete this notification?',
 
     settings: 'Settings',
     profile: 'Profile',
