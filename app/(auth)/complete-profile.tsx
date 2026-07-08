@@ -33,7 +33,13 @@ export default function CompleteProfileScreen() {
 
   const onSave = async () => {
     setError(null);
-    if (!fullName.trim() || !employer.trim() || !administration.trim() || !workCenter.trim()) {
+    if (
+      !fullName.trim() ||
+      !employer.trim() ||
+      !administration.trim() ||
+      !workCenter.trim() ||
+      !jobTitle.trim()
+    ) {
       setError(t('required'));
       return;
     }
@@ -41,7 +47,7 @@ export default function CompleteProfileScreen() {
     try {
       await completeProfile({
         fullName: fullName.trim(),
-        jobTitle: jobTitle.trim() || undefined,
+        jobTitle: jobTitle.trim(),
         educationalRegion: region && region !== NO_REGION ? region : undefined,
         employer: employer.trim(),
         workCenter: workCenter.trim(),
@@ -88,7 +94,7 @@ export default function CompleteProfileScreen() {
         onChange={setRegion}
       />
 
-      <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} />
+      <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} required />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 

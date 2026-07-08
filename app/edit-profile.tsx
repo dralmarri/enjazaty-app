@@ -41,7 +41,8 @@ export default function EditProfileScreen() {
       !fullName.trim() ||
       !employer.trim() ||
       !administration.trim() ||
-      !workCenter.trim()
+      !workCenter.trim() ||
+      !jobTitle.trim()
     ) {
       setError(t('required'));
       return;
@@ -50,7 +51,7 @@ export default function EditProfileScreen() {
     try {
       await updateProfile(profile.id, {
         full_name: fullName.trim(),
-        job_title: jobTitle.trim() || null,
+        job_title: jobTitle.trim(),
         educational_region: region && region !== NO_REGION ? region : null,
         employer: employer.trim(),
         work_center: workCenter.trim(),
@@ -95,7 +96,7 @@ export default function EditProfileScreen() {
         onChange={setRegion}
       />
 
-      <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} />
+      <Input label={t('jobTitle')} value={jobTitle} onChangeText={setJobTitle} required />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
