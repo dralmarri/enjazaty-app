@@ -35,7 +35,7 @@ theme — never red buttons.**
 | **Supabase** | Database, user logins, file storage, 2 server functions | project `qsnpkrynyqyrfiuuoyme` |
 | **Zoho Office Integrator** | Lets users edit Word/Excel/PowerPoint inside the app | Zoho account (API key stored in Supabase) |
 | **GitHub Actions** | Publishes the website automatically on every change | `.github/workflows/deploy-web.yml` |
-| **Cloudflare Pages** | Free custom-domain hosting for **enjazaty.net**, serving the same exported website | Cloudflare account, project `enjazaty-app` |
+| **Cloudflare Pages** | Free custom-domain hosting for **enjazaty.net**, serving the same exported website | Cloudflare account, project `enjazaty-app-1` |
 
 Key identifiers:
 - Supabase URL: `https://qsnpkrynyqyrfiuuoyme.supabase.co`
@@ -108,8 +108,12 @@ custom domains on its free tier. `deploy-web.yml` deploys to both EAS Hosting
 1. Sign up for a free account at https://dash.cloudflare.com (if you don't
    have one already).
 2. In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages** and
-   create a project named exactly `enjazaty-app` (any deploy method is fine —
-   the GitHub Action pushes to it directly, so you can skip connecting a repo).
+   create a project (the GitHub Action pushes to it directly, so you can skip
+   connecting a repo — if you do connect the repo via Cloudflare's own Git
+   integration instead, set its build command to
+   `npm install && npx expo export --platform web && node scripts/inject-pwa.js`
+   and build output directory to `dist`, and make sure the project name in
+   `deploy-web.yml`'s `projectName:` field matches it exactly).
 3. Get two values and add them as GitHub repo secrets
    (**Settings → Secrets and variables → Actions → New repository secret**):
    - `CLOUDFLARE_ACCOUNT_ID` — shown on the right side of the Cloudflare
