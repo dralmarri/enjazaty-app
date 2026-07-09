@@ -49,6 +49,7 @@ export function AchievementRow({
 }: AchievementRowProps) {
   const { profile } = useAuth();
   const { t, language, isRTL } = useLanguage();
+  const isApproved = achievement.status === 'approved';
 
   const [menu, setMenu] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -175,25 +176,25 @@ export function AchievementRow({
             <Text style={styles.sheetTitle} numberOfLines={1}>
               {achievement.title}
             </Text>
+            {editable && !isApproved ? (
+              <MenuItem
+                icon="create-outline"
+                label={t('rename')}
+                isRTL={isRTL}
+                onPress={() => {
+                  setMenu(false);
+                  setName(achievement.title);
+                  setRenameOpen(true);
+                }}
+              />
+            ) : null}
             {editable ? (
-              <>
-                <MenuItem
-                  icon="create-outline"
-                  label={t('rename')}
-                  isRTL={isRTL}
-                  onPress={() => {
-                    setMenu(false);
-                    setName(achievement.title);
-                    setRenameOpen(true);
-                  }}
-                />
-                <MenuItem
-                  icon="swap-horizontal-outline"
-                  label={t('moveTo')}
-                  isRTL={isRTL}
-                  onPress={openMove}
-                />
-              </>
+              <MenuItem
+                icon="swap-horizontal-outline"
+                label={t('moveTo')}
+                isRTL={isRTL}
+                onPress={openMove}
+              />
             ) : null}
             <MenuItem
               icon="print-outline"
@@ -213,7 +214,7 @@ export function AchievementRow({
               isRTL={isRTL}
               onPress={() => runDocAction('save')}
             />
-            {editable ? (
+            {editable && !isApproved ? (
               <MenuItem
                 icon="trash-outline"
                 label={t('delete')}
