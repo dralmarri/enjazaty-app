@@ -85,6 +85,7 @@ export default function AchievementDetailsScreen() {
   }
 
   const isOwner = profile?.id === achievement.owner_id;
+  const isApproved = achievement.status === 'approved';
 
   const onSubmit = async () => {
     await updateAchievementStatus(achievement.id, 'submitted');
@@ -198,8 +199,8 @@ export default function AchievementDetailsScreen() {
         </>
       ) : null}
 
-      {/* Move to folder (owner only) */}
-      {isOwner ? (
+      {/* Move to folder (owner only, and only while not yet approved) */}
+      {isOwner && !isApproved ? (
         <View style={{ marginTop: spacing.lg }}>
           <Select
             label={t('moveToFolder')}
@@ -211,6 +212,16 @@ export default function AchievementDetailsScreen() {
             onChange={onMoveToFolder}
           />
         </View>
+      ) : null}
+
+      {/* Once approved, the record is locked: no edits, no deletion. */}
+      {isApproved ? (
+        <Card style={{ marginTop: spacing.lg }}>
+          <View style={[styles.metaRow, { flexDirection: isRTL ? 'row-reverse' : 'row', marginTop: 0 }]}>
+            <Ionicons name="lock-closed-outline" size={16} color={colors.mutedText} />
+            <Text style={styles.metaText}>{t('approvedLocked')}</Text>
+          </View>
+        </Card>
       ) : null}
 
       {/* Actions */}
@@ -226,8 +237,8 @@ export default function AchievementDetailsScreen() {
           />
         ) : null}
 
-        {/* Owner can delete */}
-        {isOwner ? (
+        {/* Owner can delete, unless the achievement has been approved */}
+        {isOwner && !isApproved ? (
           <Pressable onPress={onDelete} style={styles.deleteRow} hitSlop={8}>
             <Ionicons name="trash-outline" size={18} color={colors.primaryDark} />
             <Text style={styles.deleteText}>{t('delete')}</Text>

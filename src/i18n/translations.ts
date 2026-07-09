@@ -91,6 +91,7 @@ export const translations = {
     submitForReview: 'إرسال للمراجعة',
     delete: 'حذف',
     edit: 'تعديل',
+    approvedLocked: 'تم اعتماد هذا الإنجاز، ولا يمكن تعديله أو حذفه.',
 
     // Employees
     employees: 'الموظفون',
@@ -393,6 +394,7 @@ export const translations = {
     submitForReview: 'Submit for review',
     delete: 'Delete',
     edit: 'Edit',
+    approvedLocked: 'This achievement is approved and can no longer be edited or deleted.',
 
     employees: 'Employees',
     addEmployee: 'Add employee',
