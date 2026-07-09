@@ -1,6 +1,0 @@
-# Used by Cloudflare Pages (wrangler) instead of .gitignore when uploading
-# the exported `dist/` folder. Left empty on purpose: Expo nests some
-# exported npm-package assets (icon fonts, navigation icons) under paths
-# containing a "node_modules" segment (e.g. dist/assets/node_modules/@expo/...),
-# and .gitignore's `node_modules/` rule would otherwise make wrangler skip
-# uploading those real, needed files.

@@ -28,7 +28,7 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
-        run: npx expo export --platform web && node scripts/inject-pwa.js
+        run: npx expo export --platform web && node scripts/inject-pwa.js && node scripts/rename-vendor-assets.js
 
       - name: Deploy to EAS Hosting (production)
         env:
