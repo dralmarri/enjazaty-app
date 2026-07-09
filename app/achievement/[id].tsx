@@ -104,8 +104,9 @@ export default function AchievementDetailsScreen() {
 
   const openAttachment = (att: Attachment) => {
     // Editable Office documents open in the embedded in-app editor; the rest
-    // keep the platform open/download behavior.
-    if (isEditableDocument(att)) {
+    // keep the platform open/download behavior. Once approved, the content is
+    // locked — editable documents fall back to plain open/download too.
+    if (isEditableDocument(att) && !isApproved) {
       router.push(`/doc/${att.id}?name=${encodeURIComponent(att.name ?? '')}`);
       return;
     }
@@ -199,8 +200,8 @@ export default function AchievementDetailsScreen() {
         </>
       ) : null}
 
-      {/* Move to folder (owner only, and only while not yet approved) */}
-      {isOwner && !isApproved ? (
+      {/* Move to folder (owner only) — still allowed after approval */}
+      {isOwner ? (
         <View style={{ marginTop: spacing.lg }}>
           <Select
             label={t('moveToFolder')}

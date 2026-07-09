@@ -79,6 +79,19 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!att) return new Response('attachment not found', { status: 404 });
 
+    // Defense in depth: refuse to overwrite the file if the achievement got
+    // approved while the editing session was still open.
+    if (att.achievement_id) {
+      const { data: ach } = await admin
+        .from('achievements')
+        .select('status')
+        .eq('id', att.achievement_id)
+        .maybeSingle();
+      if (ach?.status === 'approved') {
+        return new Response('achievement is approved; document is locked', { status: 403 });
+      }
+    }
+
     // Storage path = everything after ".../object/public/attachments/".
     const clean = (att.url as string).split('?')[0];
     const marker = `/object/public/${BUCKET}/`;

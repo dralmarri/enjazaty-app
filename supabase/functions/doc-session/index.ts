@@ -98,6 +98,19 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (attErr || !att) return json(404, { error: 'Attachment not found' });
 
+    // Once the parent achievement is approved its content is locked — no
+    // more editing sessions, even if requested directly against this function.
+    if (att.achievement_id) {
+      const { data: ach } = await admin
+        .from('achievements')
+        .select('status')
+        .eq('id', att.achievement_id)
+        .maybeSingle();
+      if (ach?.status === 'approved') {
+        return json(403, { error: 'This achievement is approved; its document can no longer be edited.' });
+      }
+    }
+
     // Permission: the owner, or any supervisor ABOVE the owner in the
     // administrative chain (transitive — migration_v7).
     let allowed = att.owner_id === callerId;

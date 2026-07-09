@@ -91,7 +91,7 @@ export const translations = {
     submitForReview: 'إرسال للمراجعة',
     delete: 'حذف',
     edit: 'تعديل',
-    approvedLocked: 'تم اعتماد هذا الإنجاز، ولا يمكن تعديله أو حذفه.',
+    approvedLocked: 'تم اعتماد هذا الإنجاز، ولا يمكن حذفه أو تعديل محتواه (يمكنك فقط نقله إلى مجلد آخر).',
 
     // Employees
     employees: 'الموظفون',
@@ -394,7 +394,7 @@ export const translations = {
     submitForReview: 'Submit for review',
     delete: 'Delete',
     edit: 'Edit',
-    approvedLocked: 'This achievement is approved and can no longer be edited or deleted.',
+    approvedLocked: 'This achievement is approved: it can no longer be deleted or have its content edited (you can still move it to another folder).',
 
     employees: 'Employees',
     addEmployee: 'Add employee',
