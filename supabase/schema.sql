@@ -287,6 +287,12 @@ drop policy if exists "notifications_update" on public.notifications;
 create policy "notifications_update" on public.notifications
   for update to authenticated using (user_id = auth.uid() or public.is_admin());
 
+-- Recipients (or admins) can delete their own notifications.
+drop policy if exists "notifications_delete" on public.notifications;
+create policy "notifications_delete" on public.notifications
+  for delete to authenticated
+  using (user_id = auth.uid() or public.is_admin());
+
 -- =============================================================================
 -- Helpful indexes
 -- =============================================================================
