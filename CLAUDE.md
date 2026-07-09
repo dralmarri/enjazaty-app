@@ -17,7 +17,8 @@ electronically sign them; reports can be printed and shared.
 It runs as one codebase on **Web + iOS + Android** (React Native / Expo). The
 live website is the primary product today:
 
-- **Live site:** https://enjazaty-app.expo.app
+- **Live site:** https://enjazaty-app.expo.app (custom domain **enjazaty.net** points
+  here via Cloudflare Pages — see §2 and §4A)
 
 Theme is "saffron": primary `#F4B000`, dark `#D99A00`, background `#FFFFFF`,
 soft `#FFF8E6`, text `#1F2937`, border `#F3E2B3`. **All buttons use the saffron
@@ -34,6 +35,7 @@ theme — never red buttons.**
 | **Supabase** | Database, user logins, file storage, 2 server functions | project `qsnpkrynyqyrfiuuoyme` |
 | **Zoho Office Integrator** | Lets users edit Word/Excel/PowerPoint inside the app | Zoho account (API key stored in Supabase) |
 | **GitHub Actions** | Publishes the website automatically on every change | `.github/workflows/deploy-web.yml` |
+| **Cloudflare Pages** | Free custom-domain hosting for **enjazaty.net**, serving the same exported website | Cloudflare account, project `enjazaty-app` |
 
 Key identifiers:
 - Supabase URL: `https://qsnpkrynyqyrfiuuoyme.supabase.co`
@@ -90,7 +92,42 @@ This is 95% of updates. The assistant does this:
    - Watch it: GitHub repo → **Actions** tab → the run turns green ✅.
    - To deploy manually: **Actions → Deploy web to production → Run workflow**.
 
-The owner does not need a Mac for this — pushing is enough.
+The owner does not need a Mac for this — pushing is enough. Every push also
+publishes to **enjazaty.net** via Cloudflare Pages (same `dist/` output, no
+extra steps) — see the one-time setup below.
+
+### A2) One-time setup: enjazaty.net custom domain (Cloudflare Pages)
+
+Custom domains require a **paid** Expo/EAS plan on `enjazaty-app.expo.app`, so
+instead the site is mirrored to free Cloudflare Pages hosting, which supports
+custom domains on its free tier. `deploy-web.yml` deploys to both EAS Hosting
+(free subdomain, unchanged) and Cloudflare Pages (custom domain) on every push.
+
+**Owner does this once:**
+
+1. Sign up for a free account at https://dash.cloudflare.com (if you don't
+   have one already).
+2. In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages** and
+   create a project named exactly `enjazaty-app` (any deploy method is fine —
+   the GitHub Action pushes to it directly, so you can skip connecting a repo).
+3. Get two values and add them as GitHub repo secrets
+   (**Settings → Secrets and variables → Actions → New repository secret**):
+   - `CLOUDFLARE_ACCOUNT_ID` — shown on the right side of the Cloudflare
+     dashboard overview page.
+   - `CLOUDFLARE_API_TOKEN` — create one at **My Profile → API Tokens →
+     Create Token**, using the **"Edit Cloudflare Workers"** template (it
+     includes Pages permissions).
+4. Push any change (or re-run the workflow manually) so the site deploys to
+   the new Cloudflare Pages project at least once.
+5. In the Cloudflare Pages project → **Custom domains → Set up a custom
+   domain**, enter `enjazaty.net` (and `www.enjazaty.net` if wanted).
+   - If `enjazaty.net`'s nameservers are already on Cloudflare, it activates
+     instantly.
+   - Otherwise, Cloudflare shows a CNAME record to add at the registrar where
+     you bought the domain (**Manage DNS** there) — add it and wait for DNS to
+     propagate (minutes to a few hours).
+6. Once verified, `https://enjazaty.net` serves the same site as
+   `https://enjazaty-app.expo.app`, and every future push updates both.
 
 ### B) A database change (new column, new rule, new permission)
 
@@ -135,7 +172,9 @@ No Xcode needed — EAS builds in the cloud.
   EXPO_PUBLIC_SUPABASE_ANON_KEY=<the anon key from Supabase → Settings → API>
   ```
 - **GitHub → Settings → Secrets and variables → Actions** must contain:
-  `EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+  `EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`,
+  `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (the last two are for the
+  enjazaty.net custom domain — see §4A2).
 - **Supabase → Edge Functions secrets:** `ZOHO_OI_API_KEY`, `DOC_SAVE_SECRET`.
 
 ---
