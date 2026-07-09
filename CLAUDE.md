@@ -96,42 +96,37 @@ The owner does not need a Mac for this — pushing is enough. Every push also
 publishes to **enjazaty.net** via Cloudflare Pages (same `dist/` output, no
 extra steps) — see the one-time setup below.
 
-### A2) One-time setup: enjazaty.net custom domain (Cloudflare Pages)
+### A2) enjazaty.net custom domain (Cloudflare Pages) — already set up
 
 Custom domains require a **paid** Expo/EAS plan on `enjazaty-app.expo.app`, so
 instead the site is mirrored to free Cloudflare Pages hosting, which supports
 custom domains on its free tier. `deploy-web.yml` deploys to both EAS Hosting
 (free subdomain, unchanged) and Cloudflare Pages (custom domain) on every push.
 
-**Owner does this once:**
+**Current setup (done, for reference if it ever needs to be recreated):**
 
-1. Sign up for a free account at https://dash.cloudflare.com (if you don't
-   have one already).
-2. In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages** and
-   create a project (the GitHub Action pushes to it directly, so you can skip
-   connecting a repo — if you do connect the repo via Cloudflare's own Git
-   integration instead, set its build command to
-   `npm install && npx expo export --platform web && node scripts/inject-pwa.js`
-   and build output directory to `dist`, and make sure the project name in
-   `deploy-web.yml`'s `projectName:` field matches it exactly).
-3. Get two values and add them as GitHub repo secrets
-   (**Settings → Secrets and variables → Actions → New repository secret**):
-   - `CLOUDFLARE_ACCOUNT_ID` — shown on the right side of the Cloudflare
-     dashboard overview page.
-   - `CLOUDFLARE_API_TOKEN` — create one at **My Profile → API Tokens →
-     Create Token**, using the **"Edit Cloudflare Workers"** template (it
-     includes Pages permissions).
-4. Push any change (or re-run the workflow manually) so the site deploys to
-   the new Cloudflare Pages project at least once.
-5. In the Cloudflare Pages project → **Custom domains → Set up a custom
-   domain**, enter `enjazaty.net` (and `www.enjazaty.net` if wanted).
-   - If `enjazaty.net`'s nameservers are already on Cloudflare, it activates
-     instantly.
-   - Otherwise, Cloudflare shows a CNAME record to add at the registrar where
-     you bought the domain (**Manage DNS** there) — add it and wait for DNS to
-     propagate (minutes to a few hours).
-6. Once verified, `https://enjazaty.net` serves the same site as
-   `https://enjazaty-app.expo.app`, and every future push updates both.
+- Cloudflare Pages project: **`enjazaty-app-1`** (must exactly match
+  `deploy-web.yml`'s `projectName:` field).
+- GitHub repo secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` are
+  set (Settings → Secrets and variables → Actions → Repository secrets).
+  The token was created at **My Profile → API Tokens → Create Token** using
+  the "Edit Cloudflare Workers" template (covers Pages permissions).
+- The GitHub Actions step deploys via the Cloudflare API (`cloudflare/pages-action`),
+  **not** Cloudflare's own Git integration — that Git integration was
+  intentionally disconnected (Settings → Builds & deployments → Git
+  repository → Disconnect) to avoid two competing deploy paths. If Cloudflare's
+  Git integration ever gets reconnected, either disconnect it again, or set its
+  build command to `npm install && npx expo export --platform web && node scripts/inject-pwa.js`
+  with output directory `dist` and remove the `cloudflare/pages-action` step
+  from `deploy-web.yml` instead (don't run both at once).
+- Custom domains `enjazaty.net` and `www.enjazaty.net` are configured on the
+  Cloudflare Pages project (Custom domains tab) and verified — DNS/SSL are live.
+- Production branch on GitHub is `claude/injazati-full-app-tzdu5l` (the one
+  and only branch `deploy-web.yml` triggers on — other branches from earlier
+  work were merged into it and deleted to avoid branch drift).
+
+`https://enjazaty.net` now serves the same site as
+`https://enjazaty-app.expo.app`, and every push to the working branch updates both.
 
 ### B) A database change (new column, new rule, new permission)
 
