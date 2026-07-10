@@ -218,23 +218,25 @@ export default function WorkspaceScreen() {
         )}
       </View>
 
-      {/* View members */}
-      <Pressable style={styles.membersCard} onPress={() => router.push('/members')}>
-        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="eye-outline" size={24} color={colors.primaryDark} />
+      {/* View members (admins only — non-admins already have this in the action row above) */}
+      {isAdmin ? (
+        <Pressable style={styles.membersCard} onPress={() => router.push('/members')}>
+          <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={styles.actionIcon}>
+              <Ionicons name="eye-outline" size={24} color={colors.primaryDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.membersTitle}>{t('viewMembers')}</Text>
+              <Text style={styles.membersHint}>{t('membersHint')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={colors.mutedText}
+            />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.membersTitle}>{t('viewMembers')}</Text>
-            <Text style={styles.membersHint}>{t('membersHint')}</Text>
-          </View>
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={20}
-            color={colors.mutedText}
-          />
-        </View>
-      </Pressable>
+        </Pressable>
+      ) : null}
 
       {/* Folders (workspace) */}
       {folders.length > 0 ? (
