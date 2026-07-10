@@ -3,7 +3,7 @@
  * Compiles the user's achievements and evaluations into a printable document
  * (uses expo-print, which works on web + native).
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -16,6 +16,13 @@ import { listAchievements, listEvaluations } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { Achievement, Evaluation } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
+
+// react-native-webview has no web implementation — require it natively only.
+const NativeWebView =
+  Platform.OS === 'web'
+    ? null
+    : // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('react-native-webview').WebView;
 
 export default function ReportScreen() {
   const { profile } = useAuth();
@@ -250,7 +257,37 @@ export default function ReportScreen() {
         />
       </View>
 
+      {/* Preview of the actual report page, exactly as it will print/share */}
+      <ReportPreview html={buildHtml()} />
     </Screen>
+  );
+}
+
+function ReportPreview({ html }: { html: string }) {
+  const containerRef = useRef<View>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const node = containerRef.current as unknown as HTMLElement | null;
+    if (!node) return;
+    node.innerHTML = '';
+    const iframe = document.createElement('iframe');
+    Object.assign(iframe.style, {
+      width: '100%',
+      height: '100%',
+      border: 'none',
+    });
+    iframe.srcdoc = html;
+    node.appendChild(iframe);
+  }, [html]);
+
+  if (Platform.OS === 'web') {
+    return <View ref={containerRef} style={styles.previewBox} />;
+  }
+  return (
+    <View style={styles.previewBox}>
+      <NativeWebView source={{ html }} style={styles.previewWebview} />
+    </View>
   );
 }
 
@@ -274,6 +311,15 @@ function escapeHtml(s: string): string {
 const styles = StyleSheet.create({
   actions: { flexDirection: 'row', gap: spacing.md, marginVertical: spacing.lg },
   actionBtn: { flex: 1 },
+  previewBox: {
+    height: 640,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    overflow: 'hidden',
+  },
+  previewWebview: { flex: 1 },
   summaryCard: { gap: spacing.xs },
   row: { alignItems: 'center', gap: spacing.md },
   name: { fontSize: 18, fontWeight: '900', color: colors.textDark },
