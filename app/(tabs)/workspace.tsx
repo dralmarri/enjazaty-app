@@ -33,7 +33,7 @@ import type { Achievement, Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 export default function WorkspaceScreen() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { t, language, isRTL } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -201,12 +201,21 @@ export default function WorkspaceScreen() {
           <Text style={styles.actionLabel}>{t('addAchievementType')}</Text>
         </Pressable>
 
-        <Pressable style={styles.actionCard} onPress={() => router.push('/employees')}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="people-outline" size={26} color={colors.primaryDark} />
-          </View>
-          <Text style={styles.actionLabel}>{t('manageEmployees')}</Text>
-        </Pressable>
+        {isAdmin ? (
+          <Pressable style={styles.actionCard} onPress={() => router.push('/employees')}>
+            <View style={styles.actionIcon}>
+              <Ionicons name="people-outline" size={26} color={colors.primaryDark} />
+            </View>
+            <Text style={styles.actionLabel}>{t('manageEmployees')}</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.actionCard} onPress={() => router.push('/members')}>
+            <View style={styles.actionIcon}>
+              <Ionicons name="eye-outline" size={26} color={colors.primaryDark} />
+            </View>
+            <Text style={styles.actionLabel}>{t('viewMembers')}</Text>
+          </Pressable>
+        )}
       </View>
 
       {/* View members */}
