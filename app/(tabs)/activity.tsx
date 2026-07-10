@@ -72,8 +72,7 @@ export default function ActivityScreen() {
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'all', label: t('total') },
-    { key: 'draft', label: t('draft') },
-    { key: 'submitted', label: t('submitted') },
+    { key: 'submitted', label: t('pending') },
     { key: 'approved', label: t('approved') },
   ];
 

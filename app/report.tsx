@@ -9,11 +9,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Badge, Button, Card, Header, Loading, Screen } from '@/components';
+import { Button, Card, Header, Loading, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { listAchievements, listEvaluations } from '@/lib/api';
-import { formatDate, statusTone } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { Achievement, Evaluation } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -250,21 +250,6 @@ export default function ReportScreen() {
         />
       </View>
 
-      {/* Achievements preview list */}
-      {achievements.map((a, i) => (
-        <Card key={a.id} style={styles.itemCard}>
-          <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Text style={styles.index}>{i + 1}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.itemTitle} numberOfLines={1}>
-                {a.title}
-              </Text>
-              <Text style={styles.itemDate}>{formatDate(a.created_at, language)}</Text>
-            </View>
-            <Badge label={statusLabel(a.status)} tone={statusTone(a.status)} />
-          </View>
-        </Card>
-      ))}
     </Screen>
   );
 }
@@ -303,8 +288,4 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: 20, fontWeight: '900', color: colors.primaryDark },
   statLabel: { fontSize: 12, color: colors.mutedText },
-  itemCard: { marginBottom: spacing.md },
-  index: { fontSize: 14, fontWeight: '800', color: colors.mutedText, width: 22, textAlign: 'center' },
-  itemTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },
-  itemDate: { fontSize: 11, color: colors.mutedText, marginTop: 2 },
 });
