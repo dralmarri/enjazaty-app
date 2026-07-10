@@ -87,11 +87,7 @@ export default function ActivityScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={load}>
-      <Header
-        title={t('activity')}
-        rightIcon="add-circle"
-        onRightPress={() => router.push('/achievement/new')}
-      />
+      <Header title={t('activity')} />
 
       {/* Counters */}
       <View style={styles.statsRow}>
