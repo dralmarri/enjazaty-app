@@ -473,6 +473,17 @@ export async function createContactMessage(input: {
 }): Promise<void> {
   const { error } = await supabase.from('contact_messages').insert(input);
   if (error) throw error;
+
+  // Best-effort: also email the message so it's actually seen (the row alone
+  // is silent unless someone opens the Supabase dashboard). A failure here
+  // must not block the user — the message is already saved above.
+  try {
+    await supabase.functions.invoke('send-contact-email', {
+      body: { email: input.email, message: input.message },
+    });
+  } catch {
+    // ignore — message is safely stored regardless
+  }
 }
 
 /* ------------------------------ Supervisions ----------------------------- */
