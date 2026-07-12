@@ -97,6 +97,8 @@ export interface Attachment {
   size: number | null;
   mime_type: string | null;
   owner_id: string;
+  /** Owner-confirmed "I made the requested fix" flag (see evaluations flow). */
+  fixed: boolean;
   created_at: string;
 }
 

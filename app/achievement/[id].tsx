@@ -28,6 +28,7 @@ import {
   getEvaluationByAchievement,
   listAttachments,
   listFolders,
+  setAttachmentFixed,
   updateAchievementFolder,
   updateAchievementStatus,
 } from '@/lib/api';
@@ -102,6 +103,11 @@ export default function AchievementDetailsScreen() {
     await load();
   };
 
+  const onToggleFixed = async (att: Attachment) => {
+    await setAttachmentFixed(att.id, !att.fixed);
+    await load();
+  };
+
   const openAttachment = (att: Attachment) => {
     // Editable Office documents open in the embedded in-app editor; the rest
     // keep the platform open/download behavior. Once approved, the content is
@@ -150,18 +156,44 @@ export default function AchievementDetailsScreen() {
 
       {/* Attachments */}
       <SectionTitle title={t('attachments')} />
+      {isOwner && achievement.status === 'needs_revision' ? (
+        <Text style={[styles.metaText, { textAlign: isRTL ? 'right' : 'left', marginBottom: spacing.sm }]}>
+          {t('markFixedHint')}
+        </Text>
+      ) : null}
       {attachments.length === 0 ? (
         <EmptyState icon="attach-outline" message={t('attachments')} />
       ) : (
         attachments.map((att) => (
-          <Card key={att.id} style={styles.attachCard} onPress={() => openAttachment(att)}>
+          <Card key={att.id} style={styles.attachCard}>
             <View style={[styles.attachRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={styles.attachIcon}>
-                <Ionicons name={iconForType(att.type)} size={20} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.attachName} numberOfLines={1}>
-                {att.name ?? att.url}
-              </Text>
+              <Pressable
+                style={[styles.attachMain, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={() => openAttachment(att)}
+              >
+                <View style={styles.attachIcon}>
+                  <Ionicons name={iconForType(att.type)} size={20} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.attachName} numberOfLines={1}>
+                  {att.name ?? att.url}
+                </Text>
+              </Pressable>
+              {/* Owner confirms the requested fix is done, while awaiting resubmission */}
+              {isOwner && achievement.status === 'needs_revision' ? (
+                <Pressable
+                  style={[styles.fixedBtn, att.fixed && styles.fixedBtnOn]}
+                  onPress={() => onToggleFixed(att)}
+                  hitSlop={6}
+                >
+                  <Ionicons
+                    name="checkmark"
+                    size={18}
+                    color={att.fixed ? colors.onPrimary : colors.mutedText}
+                  />
+                </Pressable>
+              ) : att.fixed ? (
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+              ) : null}
               <Ionicons
                 name={isRTL ? 'chevron-back' : 'chevron-forward'}
                 size={18}
@@ -280,6 +312,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   attachName: { flex: 1, fontSize: 14, color: colors.textDark },
+  attachMain: { flex: 1, alignItems: 'center', gap: spacing.md },
+  fixedBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fixedBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   actions: { marginTop: spacing.xl },
   deleteRow: {
     flexDirection: 'row',

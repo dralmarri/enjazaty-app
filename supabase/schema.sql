@@ -175,6 +175,9 @@ create table if not exists public.attachments (
   size           bigint,
   mime_type      text,
   owner_id       uuid not null references public.users_profile(id) on delete cascade,
+  -- Owner-confirmed "I made the requested fix" flag, shown to the
+  -- supervisor while reviewing feedback before approving.
+  fixed          boolean not null default false,
   created_at     timestamptz not null default now()
 );
 

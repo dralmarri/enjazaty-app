@@ -206,6 +206,10 @@ export default function EvaluateScreen() {
                     {att.name ?? att.url}
                   </Text>
                 </Pressable>
+                {/* The employee confirmed they made the requested fix on this file */}
+                {att.fixed ? (
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                ) : null}
                 {/* Supervisor signs & approves an image directly */}
                 {att.type === 'image' && canEvaluate ? (
                   <Pressable

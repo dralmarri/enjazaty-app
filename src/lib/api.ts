@@ -348,6 +348,22 @@ export async function updateAttachment(
   if (error) throw error;
 }
 
+/** Owner toggles "I made the requested fix" on a specific attachment. */
+export async function setAttachmentFixed(id: string, fixed: boolean): Promise<void> {
+  const { error } = await supabase.from('attachments').update({ fixed }).eq('id', id);
+  if (error) throw error;
+}
+
+/** Clears the 'fixed' flag on every attachment of an achievement — called
+ * whenever a new round of evaluation feedback is sent, so a checkmark from
+ * a previous round never carries over. */
+async function resetAttachmentsFixed(achievementId: string): Promise<void> {
+  await supabase
+    .from('attachments')
+    .update({ fixed: false })
+    .eq('achievement_id', achievementId);
+}
+
 /* ---------------------------------- Notes -------------------------------- */
 
 export async function listNotes(params: {
@@ -428,6 +444,7 @@ export async function createEvaluation(input: {
       updated_at: new Date().toISOString(),
     })
     .eq('id', input.achievement_id);
+  if (input.status === 'sent') await resetAttachmentsFixed(input.achievement_id);
   return data as Evaluation;
 }
 
@@ -456,6 +473,7 @@ export async function updateEvaluation(
       updated_at: new Date().toISOString(),
     })
     .eq('id', achievementId);
+  if (patch.status === 'sent') await resetAttachmentsFixed(achievementId);
   return data as Evaluation;
 }
 

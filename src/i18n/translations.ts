@@ -120,6 +120,7 @@ export const translations = {
     needsRevisionHint: 'توجد ملاحظات من المشرف، يمكنك التعديل على المرفق ثم إعادة الإرسال.',
     evaluationFeedbackNotifBody: 'وصلتك ملاحظات على إنجازك، يرجى المراجعة والتعديل ثم إعادة الإرسال.',
     signatureRequiredForApprove: 'التوقيع مطلوب فقط عند الاعتماد النهائي، وليس عند الإرسال.',
+    markFixedHint: 'بعد ما تعدّل الملف المطلوب، اضغط ✓ جنبه لتأكيد إنك سويت اللازم قبل إعادة الإرسال.',
     noNotes: 'لا توجد ملاحظات',
 
     // Notifications
@@ -428,6 +429,7 @@ export const translations = {
     needsRevisionHint: 'The supervisor left feedback — you can edit the attachment and resend.',
     evaluationFeedbackNotifBody: 'Your achievement got feedback — please review, make changes, and resend.',
     signatureRequiredForApprove: 'A signature is only required for final approval, not for sending feedback.',
+    markFixedHint: 'After editing the requested file, tap ✓ next to it to confirm you made the fix before resending.',
     noNotes: 'No notes',
 
     noNotifications: 'No notifications',
