@@ -38,6 +38,9 @@ export default function ActivityScreen() {
   const [subordinates, setSubordinates] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
+  const [evalsOpen, setEvalsOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -87,6 +90,12 @@ export default function ActivityScreen() {
         : achievements.filter((a) => a.status === filter),
     [achievements, filter]
   );
+  const displayed = achievementsExpanded ? visible : visible.slice(0, 3);
+
+  const onFilterChange = (key: Filter) => {
+    setFilter(key);
+    setAchievementsExpanded(false);
+  };
 
   return (
     <Screen refreshing={refreshing} onRefresh={load}>
@@ -137,11 +146,24 @@ export default function ActivityScreen() {
         </View>
       </Pressable>
 
-      {/* Evaluation reports received from supervisors */}
+      {/* Evaluation reports received from supervisors — collapsed by default
+          to keep the page short; tap to expand. */}
       {evaluations.length > 0 ? (
         <>
-          <SectionTitle title={t('evaluationReport')} />
-          {evaluations.map((ev) => (
+          <Pressable
+            style={[styles.collapseHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            onPress={() => setEvalsOpen((v) => !v)}
+          >
+            <Text style={styles.collapseTitle}>
+              {t('evaluationReport')} ({evaluations.length})
+            </Text>
+            <Ionicons
+              name={evalsOpen ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.mutedText}
+            />
+          </Pressable>
+          {evalsOpen && evaluations.map((ev) => (
             <Card key={ev.id} style={styles.evalCard}>
               <View style={[styles.evalTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <View style={styles.starsRow}>
@@ -172,11 +194,24 @@ export default function ActivityScreen() {
         </>
       ) : null}
 
-      {/* Follow-up notes supervisors left about me — a visible, documented log */}
+      {/* Follow-up notes supervisors left about me — a visible, documented
+          log, collapsed by default. */}
       {notes.length > 0 ? (
         <>
-          <SectionTitle title={t('followUpNotes')} />
-          {notes.map((n) => (
+          <Pressable
+            style={[styles.collapseHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+            onPress={() => setNotesOpen((v) => !v)}
+          >
+            <Text style={styles.collapseTitle}>
+              {t('followUpNotes')} ({notes.length})
+            </Text>
+            <Ionicons
+              name={notesOpen ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.mutedText}
+            />
+          </Pressable>
+          {notesOpen && notes.map((n) => (
             <Card key={n.id} style={styles.evalCard}>
               <View style={[styles.evalTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Badge
@@ -194,15 +229,19 @@ export default function ActivityScreen() {
         </>
       ) : null}
 
-      {/* Achievements feed */}
-      <SectionTitle title={t('myAchievements')} />
+      {/* Achievements feed — shows only the latest 3 until "view all" */}
+      <SectionTitle
+        title={t('myAchievements')}
+        actionLabel={visible.length > 3 ? t(achievementsExpanded ? 'showLess' : 'viewAll') : undefined}
+        onAction={() => setAchievementsExpanded((v) => !v)}
+      />
       <View style={styles.filterRow}>
         {filters.map((f) => {
           const active = filter === f.key;
           return (
             <Pressable
               key={f.key}
-              onPress={() => setFilter(f.key)}
+              onPress={() => onFilterChange(f.key)}
               style={[styles.chip, active && styles.chipActive]}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>
@@ -217,7 +256,7 @@ export default function ActivityScreen() {
         <EmptyState message={t('noAchievements')} hint={t('addAchievementType')} />
       ) : (
         <>
-          {visible.map((item) => (
+          {displayed.map((item) => (
             <AchievementRow
               key={item.id}
               achievement={item}
@@ -298,6 +337,13 @@ const styles = StyleSheet.create({
   reportTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
   reportHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
   hint: { fontSize: 11, color: colors.mutedText, marginTop: spacing.xs, textAlign: 'center' },
+  collapseHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  collapseTitle: { fontSize: 18, fontWeight: '800', color: colors.textDark },
   evalCard: { marginBottom: spacing.md, gap: spacing.sm },
   evalTop: { alignItems: 'center', justifyContent: 'space-between' },
   starsRow: { flexDirection: 'row', gap: 2 },

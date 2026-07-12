@@ -21,6 +21,12 @@ export function formatDate(iso: string | null, language: Language): string {
   });
 }
 
+/** Localized full month name (0-based month index) for a period picker. */
+export function monthName(monthIndex: number, language: Language): string {
+  const locale = language === 'ar' ? 'ar-u-ca-gregory' : 'en-US';
+  return new Date(2000, monthIndex, 1).toLocaleDateString(locale, { month: 'long' });
+}
+
 /** Maps an achievement status to a Badge tone. */
 export function statusTone(
   status: AchievementStatus
