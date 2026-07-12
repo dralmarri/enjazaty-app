@@ -21,18 +21,20 @@ import {
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { listAchievements, listEvaluations, listSupervisions } from '@/lib/api';
+import { listAchievements, listEvaluations, listNotesAboutMe, listSupervisions } from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Evaluation } from '@/types/database';
+import type { Achievement, Evaluation, Note } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 type Filter = 'all' | Achievement['status'];
+type NoteWithAuthor = Note & { author: { full_name: string } | null };
 
 export default function ActivityScreen() {
   const { profile, isAdmin } = useAuth();
   const { t, language, isRTL } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [notes, setNotes] = useState<NoteWithAuthor[]>([]);
   const [subordinates, setSubordinates] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
@@ -41,12 +43,14 @@ export default function ActivityScreen() {
     if (!profile) return;
     try {
       setRefreshing(true);
-      const [achs, evals] = await Promise.all([
+      const [achs, evals, nts] = await Promise.all([
         listAchievements(profile.id),
         listEvaluations(profile.id), // evaluations about me
+        listNotesAboutMe(profile.id), // follow-up notes about me
       ]);
       setAchievements(achs);
       setEvaluations(evals);
+      setNotes(nts);
       if (isAdmin) {
         const subs = await listSupervisions(profile.id);
         setSubordinates(subs.length);
@@ -163,6 +167,28 @@ export default function ActivityScreen() {
                 </View>
               ) : null}
               <Text style={styles.evalDate}>{formatDate(ev.created_at, language)}</Text>
+            </Card>
+          ))}
+        </>
+      ) : null}
+
+      {/* Follow-up notes supervisors left about me — a visible, documented log */}
+      {notes.length > 0 ? (
+        <>
+          <SectionTitle title={t('followUpNotes')} />
+          {notes.map((n) => (
+            <Card key={n.id} style={styles.evalCard}>
+              <View style={[styles.evalTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Badge
+                  label={n.kind === 'concern' ? t('concern') : t('praise')}
+                  tone={n.kind === 'concern' ? 'primary' : 'success'}
+                />
+                <Text style={styles.evalDate}>{formatDate(n.created_at, language)}</Text>
+              </View>
+              {n.content ? <Text style={styles.evalComment}>{n.content}</Text> : null}
+              {n.author?.full_name ? (
+                <Text style={styles.signLabel}>{n.author.full_name}</Text>
+              ) : null}
             </Card>
           ))}
         </>

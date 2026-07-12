@@ -145,9 +145,9 @@ export default function EmployeeProfileScreen() {
         </View>
       </Card>
 
-      {/* Private follow-up notes between supervisors — the employee never
-          sees this section (enforced server-side via RLS, not just hidden
-          here). Only visible/addable by a supervisor above this person. */}
+      {/* Follow-up notes about this person — visible to any supervisor above
+          them AND to the employee themselves (their own copy shows on their
+          Activity tab). Only a supervisor above them may add one here. */}
       {canLeaveNote || notes.length > 0 ? (
         <>
           <SectionTitle title={t('followUpNotes')} />

@@ -378,6 +378,21 @@ export async function listNotes(params: {
   return (data ?? []) as Note[];
 }
 
+/** Follow-up notes ABOUT the given user, with the writing supervisor's name
+ * attached — used on the employee's own Activity tab so they can see who
+ * left each note. */
+export async function listNotesAboutMe(
+  userId: string
+): Promise<(Note & { author: { full_name: string } | null })[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*, author:author_id (full_name)')
+    .eq('target_user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
 export async function createNote(input: {
   content?: string | null;
   type: NoteType;

@@ -214,15 +214,18 @@ create table if not exists public.notes (
 
 alter table public.notes enable row level security;
 
--- Authors, admins, and any supervisor above the targeted employee can read a
--- target_user_id note — the targeted employee themselves never can (these
--- are private follow-up notes between supervisors, not feedback to the
--- employee). Achievement-linked notes keep the author/admin-only read.
+-- Authors, admins, any supervisor above the targeted employee, AND the
+-- targeted employee themselves can read a target_user_id note — it's a
+-- documented follow-up log the employee is meant to see (accountability for
+-- the supervisor, motivation for the employee), not a hidden file. Only
+-- supervisors may WRITE one (see notes_insert below), so the employee can
+-- read but never author or alter their own record.
 drop policy if exists "notes_select" on public.notes;
 create policy "notes_select" on public.notes
   for select to authenticated
   using (
     author_id = auth.uid()
+    or target_user_id = auth.uid()
     or public.is_admin()
     or (target_user_id is not null and public.is_supervisor_of(target_user_id))
   );
