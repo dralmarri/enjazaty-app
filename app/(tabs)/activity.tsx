@@ -71,10 +71,12 @@ export default function ActivityScreen() {
     }, [load])
   );
 
+    const isPending = (a: Achievement) => a.status !== 'approved';
+
   const stats = {
     total: achievements.length,
     approved: achievements.filter((a) => a.status === 'approved').length,
-    pending: achievements.filter((a) => a.status === 'submitted').length,
+    pending: achievements.filter(isPending).length,
   };
 
   const filters: { key: Filter; label: string }[] = [
@@ -87,9 +89,12 @@ export default function ActivityScreen() {
     () =>
       filter === 'all'
         ? achievements
-        : achievements.filter((a) => a.status === filter),
+        : filter === 'approved'
+          ? achievements.filter((a) => a.status === 'approved')
+          : achievements.filter(isPending),
     [achievements, filter]
   );
+
   const displayed = achievementsExpanded ? visible : visible.slice(0, 3);
 
   const onFilterChange = (key: Filter) => {
