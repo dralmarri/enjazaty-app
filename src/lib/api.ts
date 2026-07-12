@@ -413,6 +413,7 @@ export async function createEvaluation(input: {
   rating: number;
   comment?: string | null;
   signature?: string | null;
+  status: 'sent' | 'approved';
 }): Promise<Evaluation> {
   const { data, error } = await supabase
     .from('evaluations')
@@ -420,11 +421,41 @@ export async function createEvaluation(input: {
     .select()
     .single();
   if (error) throw error;
-  // Mark the achievement as approved once it has been evaluated/signed.
   await supabase
     .from('achievements')
-    .update({ status: 'approved', updated_at: new Date().toISOString() })
+    .update({
+      status: input.status === 'approved' ? 'approved' : 'needs_revision',
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', input.achievement_id);
+  return data as Evaluation;
+}
+
+/** Updates an existing evaluation while it's still 'sent' (not yet approved). */
+export async function updateEvaluation(
+  id: string,
+  achievementId: string,
+  patch: {
+    rating: number;
+    comment?: string | null;
+    signature?: string | null;
+    status: 'sent' | 'approved';
+  }
+): Promise<Evaluation> {
+  const { data, error } = await supabase
+    .from('evaluations')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  await supabase
+    .from('achievements')
+    .update({
+      status: patch.status === 'approved' ? 'approved' : 'needs_revision',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', achievementId);
   return data as Evaluation;
 }
 

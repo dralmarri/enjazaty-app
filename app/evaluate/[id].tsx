@@ -33,6 +33,7 @@ import {
   getEvaluationByAchievement,
   listAttachments,
   supervises,
+  updateEvaluation,
 } from '@/lib/api';
 import { isEditableDocument, isPdfAttachment } from '@/lib/documents';
 import { formatDate } from '@/lib/format';
@@ -69,6 +70,12 @@ export default function EvaluateScreen() {
       ]);
       setEvaluation(existing);
       setAttachments(atts);
+      // A 'sent' evaluation is still editable feedback — prefill the form so
+      // the supervisor can tweak it before sending again or approving.
+      if (existing && existing.status === 'sent') {
+        setRating(existing.rating);
+        setComment(existing.comment ?? '');
+      }
       if (ach) {
         // You may evaluate only OTHERS' work, and only people inside YOUR
         // administrative chain (any level below you) — never outside it.
@@ -96,7 +103,7 @@ export default function EvaluateScreen() {
     );
   }
 
-  const onSubmit = async () => {
+  const onSubmit = async (targetStatus: 'sent' | 'approved') => {
     setError(null);
     if (signaturePaths.length === 0) {
       setError(t('signatureRequired'));
@@ -104,24 +111,39 @@ export default function EvaluateScreen() {
     }
     setSubmitting(true);
     try {
-      await createEvaluation({
-        achievement_id: achievement.id,
-        employee_id: achievement.owner_id,
-        evaluator_id: profile.id,
-        rating,
-        comment: comment.trim() || null,
-        // Store the hand-drawn signature as serialized SVG paths.
-        signature: JSON.stringify(signaturePaths),
-      });
-      // Notify the subordinate that their work was evaluated/approved.
+      const signature = JSON.stringify(signaturePaths);
+      if (evaluation && evaluation.status === 'sent') {
+        await updateEvaluation(evaluation.id, achievement.id, {
+          rating,
+          comment: comment.trim() || null,
+          signature,
+          status: targetStatus,
+        });
+      } else {
+        await createEvaluation({
+          achievement_id: achievement.id,
+          employee_id: achievement.owner_id,
+          evaluator_id: profile.id,
+          rating,
+          comment: comment.trim() || null,
+          // Store the hand-drawn signature as serialized SVG paths.
+          signature,
+          status: targetStatus,
+        });
+      }
+      // Notify the subordinate their work was evaluated — with feedback to
+      // review and resubmit ('sent') or that it's now final ('approved').
       await createNotification({
         user_id: achievement.owner_id,
         title: t('evaluationReport'),
-        body: `${t('rating')}: ${rating}/5`,
+        body:
+          targetStatus === 'sent'
+            ? t('evaluationFeedbackNotifBody')
+            : `${t('rating')}: ${rating}/5`,
         type: 'evaluation',
         related_id: achievement.id,
       });
-      await load(); // reloads into the locked state
+      await load();
     } catch (e: any) {
       setError(e?.message ?? t('error'));
     } finally {
@@ -211,7 +233,7 @@ export default function EvaluateScreen() {
         </>
       ) : null}
 
-      {evaluation ? (
+      {evaluation && evaluation.status === 'approved' ? (
         /* ---------------- Locked, approved report ---------------- */
         <Card style={styles.section}>
           <View style={[styles.lockRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -242,8 +264,15 @@ export default function EvaluateScreen() {
           <Text style={styles.date}>{formatDate(evaluation.created_at, language)}</Text>
         </Card>
       ) : canEvaluate ? (
-        /* ---------------- Evaluation form ---------------- */
+        /* ---------------- Evaluation form (new, or editing 'sent' feedback) ---------------- */
         <Card style={styles.section}>
+          {evaluation && evaluation.status === 'sent' ? (
+            <View style={[styles.lockRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Ionicons name="information-circle-outline" size={18} color={colors.mutedText} />
+              <Badge label={t('needsRevision')} tone="primary" />
+            </View>
+          ) : null}
+
           <Text style={[styles.label, { textAlign: isRTL ? 'right' : 'left' }]}>
             {t('rating')}
           </Text>
@@ -268,12 +297,25 @@ export default function EvaluateScreen() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <Button
-            title={submitting ? t('saving') : t('submitEvaluation')}
-            icon="checkmark-done-outline"
-            onPress={onSubmit}
-            loading={submitting}
-          />
+          <View style={[styles.actionsRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <Button
+              title={submitting ? t('saving') : t('sendEvaluation')}
+              icon="send-outline"
+              variant="outline"
+              onPress={() => onSubmit('sent')}
+              loading={submitting}
+              fullWidth={false}
+              style={styles.actionBtn}
+            />
+            <Button
+              title={submitting ? t('saving') : t('approveEvaluation')}
+              icon="checkmark-done-outline"
+              onPress={() => onSubmit('approved')}
+              loading={submitting}
+              fullWidth={false}
+              style={styles.actionBtn}
+            />
+          </View>
         </Card>
       ) : (
         /* ---------------- Not allowed (own file) ---------------- */
@@ -312,6 +354,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   section: { marginTop: spacing.lg, gap: spacing.md },
+  actionsRow: { gap: spacing.md },
+  actionBtn: { flex: 1 },
   label: { fontSize: 14, fontWeight: '600', color: colors.textDark },
   starsRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
   comment: { fontSize: 15, color: colors.textDark, textAlign: 'center' },

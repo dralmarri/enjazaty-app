@@ -150,7 +150,10 @@ export default function ActivityScreen() {
                     />
                   ))}
                 </View>
-                <Badge label={t('approved')} tone="success" />
+                <Badge
+                  label={ev.status === 'approved' ? t('approved') : t('needsRevision')}
+                  tone={ev.status === 'approved' ? 'success' : 'primary'}
+                />
               </View>
               {ev.comment ? <Text style={styles.evalComment}>{ev.comment}</Text> : null}
               {ev.signature ? (

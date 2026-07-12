@@ -130,7 +130,7 @@ create table if not exists public.achievements (
   title         text not null,
   description   text,
   status        text not null default 'draft'
-                  check (status in ('draft','submitted','approved','rejected')),
+                  check (status in ('draft','submitted','approved','rejected','needs_revision')),
   folder_id     uuid references public.folders(id) on delete set null,
   owner_id      uuid not null references public.users_profile(id) on delete cascade,
   department_id uuid references public.departments(id) on delete set null,
@@ -237,6 +237,7 @@ create table if not exists public.evaluations (
   evaluator_id   uuid not null references public.users_profile(id) on delete cascade,
   rating         int not null check (rating between 1 and 5),
   comment        text,
+  status         text not null default 'approved' check (status in ('sent','approved')),
   created_at     timestamptz not null default now()
 );
 
@@ -253,6 +254,14 @@ drop policy if exists "evaluations_insert" on public.evaluations;
 create policy "evaluations_insert" on public.evaluations
   for insert to authenticated
   with check (public.is_admin());
+
+-- The evaluator can still edit their evaluation while it's just "sent"
+-- feedback (not yet approved/locked).
+drop policy if exists "evaluations_update" on public.evaluations;
+create policy "evaluations_update" on public.evaluations
+  for update to authenticated
+  using (evaluator_id = auth.uid() and status = 'sent')
+  with check (evaluator_id = auth.uid());
 
 -- =============================================================================
 -- 8) notifications

@@ -172,7 +172,8 @@ export default function AchievementDetailsScreen() {
         ))
       )}
 
-      {/* Evaluation report (read-only) — shown once a supervisor has signed. */}
+      {/* Evaluation report — locked/final once approved, or supervisor feedback
+          the owner still needs to act on while status is 'sent'. */}
       {evaluation ? (
         <>
           <SectionTitle title={t('evaluationReport')} />
@@ -188,13 +189,19 @@ export default function AchievementDetailsScreen() {
                   />
                 ))}
               </View>
-              <Badge label={t('evaluationLocked')} tone="success" />
+              <Badge
+                label={evaluation.status === 'approved' ? t('evaluationLocked') : t('needsRevision')}
+                tone={evaluation.status === 'approved' ? 'success' : 'primary'}
+              />
             </View>
             {evaluation.comment ? (
               <Text style={styles.evalComment}>{evaluation.comment}</Text>
             ) : null}
             {evaluation.signature ? (
               <SignatureView value={evaluation.signature} height={90} />
+            ) : null}
+            {evaluation.status === 'sent' ? (
+              <Text style={styles.evalComment}>{t('needsRevisionHint')}</Text>
             ) : null}
           </Card>
         </>
@@ -227,8 +234,10 @@ export default function AchievementDetailsScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
-        {/* Owner can submit a draft for review */}
-        {isOwner && achievement.status === 'draft' ? (
+        {/* Owner can submit a draft for review, or resubmit after acting on
+            supervisor feedback (status 'needs_revision'). */}
+        {isOwner &&
+        (achievement.status === 'draft' || achievement.status === 'needs_revision') ? (
           <Button
             title={t('submitForReview')}
             icon="send-outline"

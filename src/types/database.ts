@@ -64,7 +64,12 @@ export interface Folder {
   created_at: string;
 }
 
-export type AchievementStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type AchievementStatus =
+  | 'draft'
+  | 'submitted'
+  | 'approved'
+  | 'rejected'
+  | 'needs_revision';
 
 /** achievements — the core productivity records. */
 export interface Achievement {
@@ -119,6 +124,8 @@ export interface Evaluation {
   comment: string | null;
   /** Electronic signature (typed full name of the evaluating supervisor). */
   signature: string | null;
+  /** 'sent' = feedback given, not final yet; 'approved' = locked/final. */
+  status: 'sent' | 'approved';
   created_at: string;
 }
 

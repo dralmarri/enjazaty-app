@@ -32,6 +32,8 @@ export function statusTone(
       return 'danger';
     case 'submitted':
       return 'primary';
+    case 'needs_revision':
+      return 'primary';
     default:
       return 'muted';
   }
