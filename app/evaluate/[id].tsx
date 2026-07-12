@@ -103,6 +103,10 @@ export default function EvaluateScreen() {
     );
   }
 
+  // Whether the employee has confirmed every attachment was fixed since the
+  // last round of feedback — lets the supervisor see readiness at a glance.
+  const allAttachmentsFixed = attachments.length > 0 && attachments.every((a) => a.fixed);
+
   const onSubmit = async (targetStatus: 'sent' | 'approved') => {
     setError(null);
     // The e-signature only finalizes the record, so it's required to approve
@@ -277,8 +281,15 @@ export default function EvaluateScreen() {
         <Card style={styles.section}>
           {evaluation && evaluation.status === 'sent' ? (
             <View style={[styles.lockRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <Ionicons name="information-circle-outline" size={18} color={colors.mutedText} />
-              <Badge label={t('needsRevision')} tone="primary" />
+              <Ionicons
+                name={allAttachmentsFixed ? 'checkmark-circle' : 'information-circle-outline'}
+                size={18}
+                color={allAttachmentsFixed ? colors.success : colors.mutedText}
+              />
+              <Badge
+                label={allAttachmentsFixed ? t('fixed') : t('needsRevision')}
+                tone={allAttachmentsFixed ? 'success' : 'primary'}
+              />
             </View>
           ) : null}
 

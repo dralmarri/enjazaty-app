@@ -116,11 +116,13 @@ export const translations = {
     submitEvaluation: 'إرسال التقييم',
     sendEvaluation: 'إرسال',
     approveEvaluation: 'اعتماد',
-    needsRevision: 'بحاجة تعديل',
-    needsRevisionHint: 'توجد ملاحظات من المشرف، يمكنك التعديل على المرفق ثم إعادة الإرسال.',
-    evaluationFeedbackNotifBody: 'وصلتك ملاحظات على إنجازك، يرجى المراجعة والتعديل ثم إعادة الإرسال.',
-    signatureRequiredForApprove: 'التوقيع مطلوب فقط عند الاعتماد النهائي، وليس عند الإرسال.',
-    markFixedHint: 'بعد ما تعدّل الملف المطلوب، اضغط ✓ جنبه لتأكيد إنك سويت اللازم قبل إعادة الإرسال.',
+    needsRevision: 'بحاجة إلى تعديل',
+    needsRevisionHint: 'توجد ملاحظات من المشرف على هذا الإنجاز، يُرجى إجراء التعديل اللازم على المرفق ثم إعادة الإرسال.',
+    evaluationFeedbackNotifBody: 'وردت ملاحظات على إنجازك، يُرجى مراجعتها وإجراء التعديل اللازم ثم إعادة الإرسال.',
+    signatureRequiredForApprove: 'التوقيع الإلكتروني مطلوب فقط عند الاعتماد النهائي، وليس عند الإرسال.',
+    markFixedHint: 'بعد إجراء التعديل المطلوب على الملف، اضغط علامة الصح ✓ بجانبه لتأكيد إتمام التعديل قبل إعادة الإرسال.',
+    fixed: 'تم التعديل',
+    resendReadyHint: 'تم إجراء التعديل المطلوب، يمكنك الآن إعادة إرسال التقييم إلى المشرف.',
     noNotes: 'لا توجد ملاحظات',
 
     // Notifications
@@ -430,6 +432,8 @@ export const translations = {
     evaluationFeedbackNotifBody: 'Your achievement got feedback — please review, make changes, and resend.',
     signatureRequiredForApprove: 'A signature is only required for final approval, not for sending feedback.',
     markFixedHint: 'After editing the requested file, tap ✓ next to it to confirm you made the fix before resending.',
+    fixed: 'Fixed',
+    resendReadyHint: 'The requested fix is done — you can resend the evaluation to your supervisor now.',
     noNotes: 'No notes',
 
     noNotifications: 'No notifications',

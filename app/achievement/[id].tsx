@@ -87,6 +87,11 @@ export default function AchievementDetailsScreen() {
 
   const isOwner = profile?.id === achievement.owner_id;
   const isApproved = achievement.status === 'approved';
+  // Whether the owner has confirmed every attachment was fixed since the
+  // last round of supervisor feedback — flips the "needs revision" labels
+  // to "fixed" so the owner sees their own progress before resending.
+  const allAttachmentsFixed =
+    attachments.length > 0 && attachments.every((a) => a.fixed);
 
   const onSubmit = async () => {
     await updateAchievementStatus(achievement.id, 'submitted');
@@ -141,7 +146,18 @@ export default function AchievementDetailsScreen() {
       <Card>
         <View style={[styles.titleRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           <Text style={styles.title}>{achievement.title}</Text>
-          <Badge label={t(achievement.status)} tone={statusTone(achievement.status)} />
+          <Badge
+            label={
+              achievement.status === 'needs_revision' && allAttachmentsFixed
+                ? t('fixed')
+                : t(achievement.status)
+            }
+            tone={
+              achievement.status === 'needs_revision' && allAttachmentsFixed
+                ? 'success'
+                : statusTone(achievement.status)
+            }
+          />
         </View>
         {achievement.description ? (
           <Text style={styles.description}>{achievement.description}</Text>
@@ -222,8 +238,16 @@ export default function AchievementDetailsScreen() {
                 ))}
               </View>
               <Badge
-                label={evaluation.status === 'approved' ? t('evaluationLocked') : t('needsRevision')}
-                tone={evaluation.status === 'approved' ? 'success' : 'primary'}
+                label={
+                  evaluation.status === 'approved'
+                    ? t('evaluationLocked')
+                    : allAttachmentsFixed
+                    ? t('fixed')
+                    : t('needsRevision')
+                }
+                tone={
+                  evaluation.status === 'approved' || allAttachmentsFixed ? 'success' : 'primary'
+                }
               />
             </View>
             {evaluation.comment ? (
@@ -233,7 +257,9 @@ export default function AchievementDetailsScreen() {
               <SignatureView value={evaluation.signature} height={90} />
             ) : null}
             {evaluation.status === 'sent' ? (
-              <Text style={styles.evalComment}>{t('needsRevisionHint')}</Text>
+              <Text style={styles.evalComment}>
+                {allAttachmentsFixed ? t('resendReadyHint') : t('needsRevisionHint')}
+              </Text>
             ) : null}
           </Card>
         </>
