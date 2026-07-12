@@ -105,13 +105,18 @@ export default function EvaluateScreen() {
 
   const onSubmit = async (targetStatus: 'sent' | 'approved') => {
     setError(null);
-    if (signaturePaths.length === 0) {
+    // The e-signature only finalizes the record, so it's required to approve
+    // — sending feedback for the employee to review/correct doesn't need it.
+    if (targetStatus === 'approved' && signaturePaths.length === 0) {
       setError(t('signatureRequired'));
       return;
     }
     setSubmitting(true);
     try {
-      const signature = JSON.stringify(signaturePaths);
+      const signature =
+        signaturePaths.length > 0
+          ? JSON.stringify(signaturePaths)
+          : evaluation?.signature ?? null;
       if (evaluation && evaluation.status === 'sent') {
         await updateEvaluation(evaluation.id, achievement.id, {
           rating,
@@ -293,6 +298,9 @@ export default function EvaluateScreen() {
           <Text style={[styles.label, { textAlign: isRTL ? 'right' : 'left' }]}>
             {t('eSignature')}
           </Text>
+          <Text style={[styles.signHint, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('signatureRequiredForApprove')}
+          </Text>
           <SignatureChooser onChange={setSignaturePaths} />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -357,6 +365,7 @@ const styles = StyleSheet.create({
   actionsRow: { gap: spacing.md },
   actionBtn: { flex: 1 },
   label: { fontSize: 14, fontWeight: '600', color: colors.textDark },
+  signHint: { fontSize: 12, color: colors.mutedText, marginTop: -spacing.sm },
   starsRow: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
   comment: { fontSize: 15, color: colors.textDark, textAlign: 'center' },
   lockRow: { alignItems: 'center', gap: spacing.sm },

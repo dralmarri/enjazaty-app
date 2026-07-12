@@ -119,6 +119,7 @@ export const translations = {
     needsRevision: 'بحاجة تعديل',
     needsRevisionHint: 'توجد ملاحظات من المشرف، يمكنك التعديل على المرفق ثم إعادة الإرسال.',
     evaluationFeedbackNotifBody: 'وصلتك ملاحظات على إنجازك، يرجى المراجعة والتعديل ثم إعادة الإرسال.',
+    signatureRequiredForApprove: 'التوقيع مطلوب فقط عند الاعتماد النهائي، وليس عند الإرسال.',
     noNotes: 'لا توجد ملاحظات',
 
     // Notifications
@@ -426,6 +427,7 @@ export const translations = {
     needsRevision: 'Needs revision',
     needsRevisionHint: 'The supervisor left feedback — you can edit the attachment and resend.',
     evaluationFeedbackNotifBody: 'Your achievement got feedback — please review, make changes, and resend.',
+    signatureRequiredForApprove: 'A signature is only required for final approval, not for sending feedback.',
     noNotes: 'No notes',
 
     noNotifications: 'No notifications',
