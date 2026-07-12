@@ -11,21 +11,33 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import {
   Avatar,
   Badge,
+  Button,
   Card,
   EmptyState,
   Header,
+  Input,
   Loading,
   Screen,
   SectionTitle,
 } from '@/components';
+import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfile, listAchievements, listRootFolders, listSupervisions } from '@/lib/api';
+import {
+  createNote,
+  getProfile,
+  listAchievements,
+  listNotes,
+  listRootFolders,
+  listSupervisions,
+  supervises,
+} from '@/lib/api';
 import { formatDate, statusTone } from '@/lib/format';
-import type { Achievement, Folder, Supervision, UserProfile } from '@/types/database';
+import type { Achievement, Folder, Note, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function EmployeeProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { profile } = useAuth();
   const { t, language, isRTL } = useLanguage();
   const [employee, setEmployee] = useState<UserProfile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -35,16 +47,24 @@ export default function EmployeeProfileScreen() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [addMenu, setAddMenu] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [canLeaveNote, setCanLeaveNote] = useState(false);
+  const [noteModal, setNoteModal] = useState(false);
+  const [noteKind, setNoteKind] = useState<'praise' | 'concern'>('praise');
+  const [noteContent, setNoteContent] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!id || !profile) return;
     setLoading(true);
     try {
-      const [emp, achs, fdrs, subs] = await Promise.all([
+      const [emp, achs, fdrs, subs, nts, canNote] = await Promise.all([
         getProfile(id),
         listAchievements(id),
         listRootFolders(id),
         listSupervisions(id).catch(() => []),
+        listNotes({ targetUserId: id }).catch(() => []),
+        id === profile.id ? Promise.resolve(false) : supervises(profile.id, id),
       ]);
       setEmployee(emp);
       setAchievements(achs);
@@ -54,10 +74,12 @@ export default function EmployeeProfileScreen() {
       // list only the ones placed directly in his workspace — this keeps the
       // whole chain reachable (A → B → C → …) without duplicating anyone.
       setWorkspaceTeam(subs.filter((s) => s.placement !== 'folder' || !s.folder_id));
+      setNotes(nts);
+      setCanLeaveNote(canNote);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, profile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,6 +96,25 @@ export default function EmployeeProfileScreen() {
       </Screen>
     );
   }
+
+  const onSaveNote = async () => {
+    if (!profile || !noteContent.trim()) return;
+    setNoteSaving(true);
+    try {
+      await createNote({
+        content: noteContent.trim(),
+        type: 'text',
+        target_user_id: employee.id,
+        author_id: profile.id,
+        kind: noteKind,
+      });
+      setNoteContent('');
+      setNoteModal(false);
+      await load();
+    } finally {
+      setNoteSaving(false);
+    }
+  };
 
   return (
     <Screen>
@@ -103,6 +144,40 @@ export default function EmployeeProfileScreen() {
           </View>
         </View>
       </Card>
+
+      {/* Private follow-up notes between supervisors — the employee never
+          sees this section (enforced server-side via RLS, not just hidden
+          here). Only visible/addable by a supervisor above this person. */}
+      {canLeaveNote || notes.length > 0 ? (
+        <>
+          <SectionTitle title={t('followUpNotes')} />
+          {canLeaveNote ? (
+            <Button
+              title={t('leaveNote')}
+              icon="chatbox-ellipses-outline"
+              variant="secondary"
+              onPress={() => setNoteModal(true)}
+              style={{ marginBottom: spacing.md }}
+            />
+          ) : null}
+          {notes.length === 0 ? (
+            <EmptyState icon="chatbox-ellipses-outline" message={t('noFollowUpNotes')} />
+          ) : (
+            notes.map((n) => (
+              <Card key={n.id} style={styles.noteCard}>
+                <View style={[styles.noteTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Badge
+                    label={n.kind === 'concern' ? t('concern') : t('praise')}
+                    tone={n.kind === 'concern' ? 'primary' : 'success'}
+                  />
+                  <Text style={styles.noteDate}>{formatDate(n.created_at, language)}</Text>
+                </View>
+                {n.content ? <Text style={styles.noteContent}>{n.content}</Text> : null}
+              </Card>
+            ))
+          )}
+        </>
+      ) : null}
 
       {/* Subordinates placed directly in this user's WORKSPACE (not inside a
           folder) — without this section they would be unreachable from above.
@@ -226,6 +301,59 @@ export default function EmployeeProfileScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Leave a private follow-up note (supervisor only) */}
+      <Modal
+        visible={noteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setNoteModal(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setNoteModal(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>{t('leaveNote')}</Text>
+            <View style={[styles.kindRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Pressable
+                style={[styles.kindChip, noteKind === 'praise' && styles.kindChipActive]}
+                onPress={() => setNoteKind('praise')}
+              >
+                <Text
+                  style={[styles.kindChipText, noteKind === 'praise' && styles.kindChipTextActive]}
+                >
+                  {t('praise')}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.kindChip, noteKind === 'concern' && styles.kindChipActive]}
+                onPress={() => setNoteKind('concern')}
+              >
+                <Text
+                  style={[styles.kindChipText, noteKind === 'concern' && styles.kindChipTextActive]}
+                >
+                  {t('concern')}
+                </Text>
+              </Pressable>
+            </View>
+            <Input
+              label={t('noteContent')}
+              value={noteContent}
+              onChangeText={setNoteContent}
+              placeholder={t('noteContentPlaceholder')}
+              multiline
+              numberOfLines={4}
+              style={styles.noteInput}
+            />
+            <Text style={styles.notePrivacyHint}>{t('noteVisibilityHint')}</Text>
+            <Button
+              title={noteSaving ? t('saving') : t('save')}
+              onPress={onSaveNote}
+              loading={noteSaving}
+              disabled={!noteContent.trim()}
+              style={{ marginTop: spacing.sm }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -279,4 +407,22 @@ const styles = StyleSheet.create({
   },
   achTitle: { fontSize: 15, fontWeight: '700', color: colors.textDark },
   achDate: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
+  noteCard: { marginBottom: spacing.md, gap: spacing.sm },
+  noteTop: { alignItems: 'center', justifyContent: 'space-between' },
+  noteDate: { fontSize: 11, color: colors.mutedText },
+  noteContent: { fontSize: 14, color: colors.textDark, lineHeight: 20 },
+  kindRow: { gap: spacing.sm, marginBottom: spacing.md },
+  kindChip: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  kindChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  kindChipText: { fontSize: 14, fontWeight: '700', color: colors.textDark },
+  kindChipTextActive: { color: colors.onPrimary },
+  noteInput: { minHeight: 90, textAlignVertical: 'top' },
+  notePrivacyHint: { fontSize: 12, color: colors.mutedText, marginTop: spacing.xs },
 });

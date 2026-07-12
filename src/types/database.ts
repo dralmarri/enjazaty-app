@@ -113,6 +113,8 @@ export interface Note {
   achievement_id: string | null;
   target_user_id: string | null; // a note about a specific employee
   author_id: string;
+  /** Only set on target_user_id notes: a private supervisor follow-up tag. */
+  kind: 'praise' | 'concern' | null;
   created_at: string;
 }
 

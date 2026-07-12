@@ -385,6 +385,7 @@ export async function createNote(input: {
   achievement_id?: string | null;
   target_user_id?: string | null;
   author_id: string;
+  kind?: 'praise' | 'concern' | null;
 }): Promise<Note> {
   const { data, error } = await supabase
     .from('notes')

@@ -206,21 +206,41 @@ create table if not exists public.notes (
   achievement_id uuid references public.achievements(id) on delete cascade,
   target_user_id uuid references public.users_profile(id) on delete cascade,
   author_id      uuid not null references public.users_profile(id) on delete cascade,
+  -- Only set for target_user_id notes (private supervisor follow-up notes):
+  -- 'praise' or 'concern'. Null for achievement-linked notes.
+  kind           text check (kind in ('praise','concern')),
   created_at     timestamptz not null default now()
 );
 
 alter table public.notes enable row level security;
 
--- Authors, the targeted employee, and admins can read.
+-- Authors, admins, and any supervisor above the targeted employee can read a
+-- target_user_id note — the targeted employee themselves never can (these
+-- are private follow-up notes between supervisors, not feedback to the
+-- employee). Achievement-linked notes keep the author/admin-only read.
 drop policy if exists "notes_select" on public.notes;
 create policy "notes_select" on public.notes
   for select to authenticated
-  using (author_id = auth.uid() or target_user_id = auth.uid() or public.is_admin());
+  using (
+    author_id = auth.uid()
+    or public.is_admin()
+    or (target_user_id is not null and public.is_supervisor_of(target_user_id))
+  );
 
+-- Only a supervisor of the targeted employee (or an admin) may write a
+-- target_user_id note; achievement-linked notes keep the old "any
+-- authenticated author" behavior.
 drop policy if exists "notes_insert" on public.notes;
 create policy "notes_insert" on public.notes
   for insert to authenticated
-  with check (author_id = auth.uid());
+  with check (
+    author_id = auth.uid()
+    and (
+      target_user_id is null
+      or public.is_supervisor_of(target_user_id)
+      or public.is_admin()
+    )
+  );
 
 drop policy if exists "notes_modify" on public.notes;
 create policy "notes_modify" on public.notes
