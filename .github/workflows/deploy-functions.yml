@@ -1,0 +1,35 @@
+name: Deploy Supabase functions
+
+# Runs automatically whenever the doc-session / doc-save server functions
+# change, and can be triggered manually from the GitHub website / mobile app
+# (Actions → Deploy Supabase functions → Run workflow). No terminal needed —
+# just add the SUPABASE_ACCESS_TOKEN secret once (see CLAUDE.md §4C).
+on:
+  push:
+    branches:
+      - claude/injazati-full-app-tzdu5l
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy doc-session
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy doc-session --project-ref qsnpkrynyqyrfiuuoyme
+
+      - name: Deploy doc-save
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy doc-save --no-verify-jwt --project-ref qsnpkrynyqyrfiuuoyme

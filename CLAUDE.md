@@ -142,7 +142,18 @@ always through a migration file so there's a record.
 
 ### C) A change to the document-editor server functions
 
-Only if `supabase/functions/doc-session` or `doc-save` change. Needs a Mac once:
+Only if `supabase/functions/doc-session` or `doc-save` change. This deploys
+**automatically** via `.github/workflows/deploy-functions.yml` on every push
+to the working branch that touches `supabase/functions/**` — no terminal or
+Mac needed, same as the website deploy. One-time setup (already done, for
+reference if it ever needs to be recreated):
+
+1. https://supabase.com/dashboard/account/tokens → **Generate new token**.
+2. GitHub repo → **Settings → Secrets and variables → Actions** → add repo
+   secret `SUPABASE_ACCESS_TOKEN` with that value.
+
+To deploy manually instead: **Actions → Deploy Supabase functions → Run
+workflow**. Or from a machine with Node, the old manual path still works:
 
 ```bash
 npx supabase login
@@ -173,7 +184,8 @@ No Xcode needed — EAS builds in the cloud.
 - **GitHub → Settings → Secrets and variables → Actions** must contain:
   `EXPO_TOKEN`, `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`,
   `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (the last two are for the
-  enjazaty.net custom domain — see §4A2).
+  enjazaty.net custom domain — see §4A2), `SUPABASE_ACCESS_TOKEN` (deploys the
+  `doc-session`/`doc-save` edge functions automatically — see §4C).
 - **Supabase → Edge Functions secrets:** `ZOHO_OI_API_KEY`, `DOC_SAVE_SECRET`.
 
 ---
