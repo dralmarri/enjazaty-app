@@ -179,19 +179,10 @@ Deno.serve(async (req) => {
       'user_info',
       JSON.stringify({ user_id: callerId, display_name: callerProf?.full_name ?? 'User' })
     );
-    // "pageview" (Writer's default) renders a fixed printed-page width, which
-    // forces mobile Safari to auto-zoom to fit the page and then get stuck
-    // zoomed — pinch-out and cursor taps stop responding. "webview" reflows
-    // to the container width instead, so there's no fixed page edge to zoom
-    // to. Only applies to Writer (Sheet/Show have no such fixed-page mode).
-    const isWriter = editor.endpoint.includes('/writer/');
-    form.set(
-      'editor_settings',
-      JSON.stringify({
-        language: lang === 'en' ? 'en' : 'ar',
-        ...(isWriter ? { view: 'webview' } : {}),
-      })
-    );
+    // Tried "webview" mode here to fix a mobile-Safari zoom/cursor lockup
+    // bug, but it made the problem worse in practice — reverted to the
+    // default "pageview" until a better fix is found.
+    form.set('editor_settings', JSON.stringify({ language: lang === 'en' ? 'en' : 'ar' }));
     form.set('permissions', JSON.stringify({ 'document.export': true, 'document.print': true }));
     form.set(
       'callback_settings',
