@@ -35,7 +35,7 @@ import {
   listFolders,
   listMembers,
 } from '@/lib/api';
-import { uploadFile } from '@/lib/storage';
+import { UploadSizeError, uploadFile } from '@/lib/storage';
 import type { AttachmentType, Folder } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -253,7 +253,7 @@ export default function NewAchievementScreen() {
 
       router.replace(`/achievement/${achievement.id}`);
     } catch (e: any) {
-      setError(e?.message ?? t('error'));
+      setError(e instanceof UploadSizeError ? t(e.key) : e?.message ?? t('error'));
     } finally {
       setSaving(false);
     }

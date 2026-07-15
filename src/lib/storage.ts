@@ -8,6 +8,7 @@
 import { Image } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './supabase';
+import type { TranslationKey } from '@/i18n/translations';
 
 export const ATTACHMENTS_BUCKET = 'attachments';
 
@@ -16,6 +17,23 @@ export const ATTACHMENTS_BUCKET = 'attachments';
 // lossless for documentation photos, typically 60-80% smaller.
 const MAX_IMAGE_DIMENSION = 1920;
 const IMAGE_QUALITY = 0.85;
+
+// Hard caps enforced after compression, so a still-too-big file is rejected
+// instead of silently costing storage/transfer.
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB
+const MAX_PDF_BYTES = 5 * 1024 * 1024; // 5MB
+
+/**
+ * Thrown when an upload is rejected for being too large. `key` is a
+ * TranslationKey so callers can show a localized message via `t(e.key)`.
+ */
+export class UploadSizeError extends Error {
+  key: TranslationKey;
+  constructor(key: TranslationKey) {
+    super(key);
+    this.key = key;
+  }
+}
 
 function getImageSize(uri: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -76,6 +94,13 @@ export async function uploadFile(params: {
   // Read the file into a Blob (works on web + native via fetch).
   const response = await fetch(sourceUri);
   const blob = await response.blob();
+
+  if (isCompressiblePhoto && blob.size > MAX_IMAGE_BYTES) {
+    throw new UploadSizeError('imageTooLarge');
+  }
+  if (finalContentType === 'application/pdf' && blob.size > MAX_PDF_BYTES) {
+    throw new UploadSizeError('pdfTooLarge');
+  }
 
   const safeName = (finalFileName ?? `file-${Date.now()}`).replace(/[^\w.\-]/g, '_');
   const path = `${userId}/${Date.now()}-${safeName}`;

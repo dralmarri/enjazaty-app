@@ -8,7 +8,7 @@
  *  - Logout
  */
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
@@ -18,7 +18,7 @@ import { Avatar, Badge, Button, Card, Header, Screen, SectionTitle } from '@/com
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { updateProfile } from '@/lib/api';
-import { uploadFile } from '@/lib/storage';
+import { UploadSizeError, uploadFile } from '@/lib/storage';
 import type { Language } from '@/i18n/translations';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -72,8 +72,8 @@ export default function AccountScreen() {
       });
       await updateProfile(profile.id, { avatar_url: uploaded.url });
       await refreshProfile();
-    } catch {
-      // ignore
+    } catch (e) {
+      if (e instanceof UploadSizeError) Alert.alert(t('error'), t(e.key));
     } finally {
       setUploading(false);
     }

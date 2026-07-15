@@ -30,7 +30,7 @@ import {
   getAchievement,
   updateAchievementStatus,
 } from '@/lib/api';
-import { uploadFile } from '@/lib/storage';
+import { UploadSizeError, uploadFile } from '@/lib/storage';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function SignScreen() {
@@ -189,7 +189,7 @@ export default function SignScreen() {
         }
         router.back();
       } catch (e: any) {
-        setError(e?.message ?? t('error'));
+        setError(e instanceof UploadSizeError ? t(e.key) : e?.message ?? t('error'));
         setCapturing(false);
         setBusy(false);
       }

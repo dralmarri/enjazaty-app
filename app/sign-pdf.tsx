@@ -30,7 +30,7 @@ import {
   updateAchievementStatus,
   updateAttachment,
 } from '@/lib/api';
-import { deleteStorageObject, uploadFile } from '@/lib/storage';
+import { UploadSizeError, deleteStorageObject, uploadFile } from '@/lib/storage';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function SignPdfScreen() {
@@ -240,7 +240,7 @@ export default function SignPdfScreen() {
       }
       router.back();
     } catch (e: any) {
-      setError(e?.message ?? t('error'));
+      setError(e instanceof UploadSizeError ? t(e.key) : e?.message ?? t('error'));
     } finally {
       setBusy(false);
     }
