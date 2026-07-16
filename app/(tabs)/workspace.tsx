@@ -218,6 +218,25 @@ export default function WorkspaceScreen() {
         )}
       </View>
 
+      {/* Attendance — every user can mark/view attendance for their own direct
+          subordinates (empty state shown if they have none). */}
+      <Pressable style={styles.membersCard} onPress={() => router.push('/attendance')}>
+        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={styles.actionIcon}>
+            <Ionicons name="calendar-outline" size={24} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.membersTitle}>{t('attendance')}</Text>
+            <Text style={styles.membersHint}>{t('attendanceHint')}</Text>
+          </View>
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={20}
+            color={colors.mutedText}
+          />
+        </View>
+      </Pressable>
+
       {/* View members (admins only — non-admins already have this in the action row above) */}
       {isAdmin ? (
         <Pressable style={styles.membersCard} onPress={() => router.push('/members')}>

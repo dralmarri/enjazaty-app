@@ -161,6 +161,28 @@ export interface Signature {
   created_at: string;
 }
 
+export type AttendanceExceptionType =
+  | 'absent'
+  | 'sick_leave'
+  | 'emergency_leave'
+  | 'permission';
+
+/**
+ * attendance_exceptions — exception-based attendance. A day with no row
+ * means the employee was present; a row is recorded only for an absence,
+ * sick leave, emergency leave, or permission.
+ */
+export interface AttendanceException {
+  id: string;
+  employee_id: string;
+  date: string; // 'YYYY-MM-DD'
+  type: AttendanceExceptionType;
+  note: string | null;
+  recorded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Convenience type describing the whole DB for the Supabase client. */
 export interface Database {
   public: {
@@ -173,6 +195,7 @@ export interface Database {
       notes: { Row: Note };
       evaluations: { Row: Evaluation };
       notifications: { Row: AppNotification };
+      attendance_exceptions: { Row: AttendanceException };
     };
   };
 }

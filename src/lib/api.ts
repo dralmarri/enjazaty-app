@@ -10,6 +10,8 @@ import type {
   AppNotification,
   Attachment,
   AttachmentType,
+  AttendanceException,
+  AttendanceExceptionType,
   Department,
   Evaluation,
   Folder,
@@ -688,6 +690,75 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
     .update({ read: true })
     .eq('user_id', userId)
     .eq('read', false);
+  if (error) throw error;
+}
+
+/* ------------------------------- Attendance ------------------------------- */
+
+/** Exceptions recorded for a set of employees on one specific day. */
+export async function listAttendanceExceptions(
+  employeeIds: string[],
+  date: string
+): Promise<AttendanceException[]> {
+  if (employeeIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('attendance_exceptions')
+    .select('*')
+    .in('employee_id', employeeIds)
+    .eq('date', date);
+  if (error) throw error;
+  return (data ?? []) as AttendanceException[];
+}
+
+/** Exceptions recorded for a set of employees across a date range (report). */
+export async function listAttendanceExceptionsForRange(
+  employeeIds: string[],
+  startDate: string,
+  endDate: string
+): Promise<AttendanceException[]> {
+  if (employeeIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('attendance_exceptions')
+    .select('*')
+    .in('employee_id', employeeIds)
+    .gte('date', startDate)
+    .lte('date', endDate);
+  if (error) throw error;
+  return (data ?? []) as AttendanceException[];
+}
+
+/** Record (or overwrite) the attendance exception for one employee/day. */
+export async function upsertAttendanceException(input: {
+  employee_id: string;
+  date: string;
+  type: AttendanceExceptionType;
+  note?: string | null;
+  recorded_by: string;
+}): Promise<void> {
+  const { error } = await supabase.from('attendance_exceptions').upsert(
+    {
+      employee_id: input.employee_id,
+      date: input.date,
+      type: input.type,
+      note: input.note ?? null,
+      recorded_by: input.recorded_by,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'employee_id,date' }
+  );
+  if (error) throw error;
+}
+
+/** Clear a recorded exception — the day goes back to "present". */
+export async function clearAttendanceException(
+  employeeId: string,
+  date: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('attendance_exceptions')
+    .delete()
+    .eq('employee_id', employeeId)
+    .eq('date', date);
   if (error) throw error;
 }
 

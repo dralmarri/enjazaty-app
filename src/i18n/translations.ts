@@ -344,6 +344,24 @@ export const translations = {
 
     // Folder employees
     folderEmployees: 'الموظفون في المجلد',
+
+    // Attendance
+    attendance: 'الحضور والغياب',
+    attendanceHint: 'سجّل الحضور والغياب',
+    attendanceReport: 'تقرير الحضور الشهري',
+    present: 'حاضر',
+    absent: 'غائب',
+    sickLeave: 'إجازة مرضية',
+    emergencyLeave: 'إجازة طارئة',
+    permission: 'استئذان',
+    markAttendance: 'تسجيل الحالة',
+    attendanceNote: 'ملاحظة (اختياري)',
+    noSubordinatesForAttendance: 'لا يوجد موظفون تحت إشرافك',
+    markAsPresent: 'إعادة تعيين كحاضر',
+    attendanceSaved: 'تم الحفظ',
+    thisMonth: 'هذا الشهر',
+    totalDays: 'الإجمالي',
+    noExceptionsThisMonth: 'لا توجد حالات غياب أو استئذان هذا الشهر',
   },
 
   en: {
@@ -653,6 +671,24 @@ export const translations = {
     pageOf: 'Page {current} of {total}',
 
     folderEmployees: 'Employees in folder',
+
+    // Attendance
+    attendance: 'Attendance',
+    attendanceHint: 'Record attendance and absences',
+    attendanceReport: 'Monthly attendance report',
+    present: 'Present',
+    absent: 'Absent',
+    sickLeave: 'Sick leave',
+    emergencyLeave: 'Emergency leave',
+    permission: 'Permission',
+    markAttendance: 'Mark status',
+    attendanceNote: 'Note (optional)',
+    noSubordinatesForAttendance: 'You have no employees to supervise',
+    markAsPresent: 'Reset to present',
+    attendanceSaved: 'Saved',
+    thisMonth: 'This month',
+    totalDays: 'Total',
+    noExceptionsThisMonth: 'No absences or permissions this month',
   },
 } as const;
 
