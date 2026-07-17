@@ -163,7 +163,7 @@ export default function ReportScreen() {
       </div>
       <div class="meta">
         <div><b>${t('jobTitle')}:</b> ${escapeHtml(profile?.job_title ?? '—')}</div>
-        <div><b>${t('educationalRegion')}:</b> ${escapeHtml(profile?.educational_region ?? '—')}</div>
+        <div><b>${t('workCenter')}:</b> ${escapeHtml(profile?.work_center ?? '—')}</div>
         <div><b>${t('reportDate')}:</b> ${today}</div>
         ${
           dateRange
@@ -292,7 +292,7 @@ export default function ReportScreen() {
           <Text style={styles.name}>{profile?.full_name}</Text>
         </View>
         <Text style={styles.meta}>{profile?.job_title || '—'}</Text>
-        <Text style={styles.meta}>{profile?.educational_region || '—'}</Text>
+        <Text style={styles.meta}>{profile?.work_center || '—'}</Text>
         <Text style={styles.meta}>
           {t('reportDate')}: {today}
         </Text>
