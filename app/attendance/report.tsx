@@ -112,6 +112,7 @@ export default function AttendanceReportScreen() {
         <tr>
           <td>${i + 1}</td>
           <td>${escapeHtml(item.subordinate.full_name)}</td>
+          <td>${escapeHtml(item.subordinate.job_title ?? '—')}</td>
           <td>${counts.absent}</td>
           <td>${counts.sick_leave}</td>
           <td>${counts.emergency_leave}</td>
@@ -158,7 +159,7 @@ export default function AttendanceReportScreen() {
       </div>
       ${
         subordinates.length
-          ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('leave')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
+          ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('jobTitle')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('leave')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
           : `<p>${t('noData')}</p>`
       }
       ${
@@ -298,6 +299,9 @@ export default function AttendanceReportScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{item.subordinate.full_name}</Text>
                   <Text style={styles.sub}>{item.subordinate.user_code}</Text>
+                  {item.subordinate.job_title ? (
+                    <Text style={styles.jobTitle}>{item.subordinate.job_title}</Text>
+                  ) : null}
                 </View>
                 <Text style={styles.total}>
                   {total} {t('totalDays')}
@@ -357,6 +361,7 @@ const styles = StyleSheet.create({
   row: { alignItems: 'center', gap: spacing.md },
   name: { fontSize: 16, fontWeight: '800', color: colors.textDark },
   sub: { fontSize: 13, color: colors.mutedText, marginTop: 2 },
+  jobTitle: { fontSize: 11, color: colors.mutedText, marginTop: 1 },
   total: { fontSize: 13, fontWeight: '700', color: colors.primaryDark },
   empty: { fontSize: 13, color: colors.mutedText, marginTop: spacing.sm },
   chips: { flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },

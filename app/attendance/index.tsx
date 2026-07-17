@@ -245,6 +245,9 @@ export default function AttendanceScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{item.subordinate.full_name}</Text>
                 <Text style={styles.sub}>{item.subordinate.user_code}</Text>
+                {item.subordinate.job_title ? (
+                  <Text style={styles.jobTitle}>{item.subordinate.job_title}</Text>
+                ) : null}
               </View>
               <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
                 {statusBadge(item.subordinate.id)}
@@ -394,6 +397,7 @@ const styles = StyleSheet.create({
   row: { alignItems: 'center', gap: spacing.md },
   name: { fontSize: 16, fontWeight: '800', color: colors.textDark },
   sub: { fontSize: 13, color: colors.mutedText, marginTop: 2 },
+  jobTitle: { fontSize: 11, color: colors.mutedText, marginTop: 1 },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.white,
