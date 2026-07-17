@@ -83,6 +83,7 @@ export default function AttendanceReportScreen() {
       sick_leave: 0,
       emergency_leave: 0,
       permission: 0,
+      leave: 0,
     };
     rows.forEach((r) => {
       counts[r.type] += 1;
@@ -95,6 +96,7 @@ export default function AttendanceReportScreen() {
     sick_leave: t('sickLeave'),
     emergency_leave: t('emergencyLeave'),
     permission: t('permission'),
+    leave: t('leave'),
   };
 
   const label = useMemo(
@@ -114,6 +116,7 @@ export default function AttendanceReportScreen() {
           <td>${counts.sick_leave}</td>
           <td>${counts.emergency_leave}</td>
           <td>${counts.permission}</td>
+          <td>${counts.leave}</td>
           <td>${total}</td>
         </tr>`;
       })
@@ -155,7 +158,7 @@ export default function AttendanceReportScreen() {
       </div>
       ${
         subordinates.length
-          ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
+          ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('leave')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
           : `<p>${t('noData')}</p>`
       }
       ${

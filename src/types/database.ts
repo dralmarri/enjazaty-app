@@ -165,7 +165,8 @@ export type AttendanceExceptionType =
   | 'absent'
   | 'sick_leave'
   | 'emergency_leave'
-  | 'permission';
+  | 'permission'
+  | 'leave';
 
 /**
  * attendance_exceptions — exception-based attendance. A day with no row

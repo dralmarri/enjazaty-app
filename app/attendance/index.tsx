@@ -8,7 +8,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { Avatar, Badge, Button, Card, EmptyState, Header, Input, Screen } from '@/components';
+import { Avatar, Badge, Button, Card, EmptyState, Header, Input, Screen, Select } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
@@ -17,7 +17,7 @@ import {
   listSupervisions,
   upsertAttendanceException,
 } from '@/lib/api';
-import { formatDate } from '@/lib/format';
+import { formatDate, monthName } from '@/lib/format';
 import type { AttendanceException, AttendanceExceptionType, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -25,7 +25,24 @@ function toDateKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-const TYPES: AttendanceExceptionType[] = ['absent', 'sick_leave', 'emergency_leave', 'permission'];
+/** Every date key from `from` to `to`, inclusive. */
+function dateRangeKeys(from: Date, to: Date): string[] {
+  const keys: string[] = [];
+  const cursor = new Date(from);
+  while (cursor <= to) {
+    keys.push(toDateKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return keys;
+}
+
+const TYPES: AttendanceExceptionType[] = [
+  'absent',
+  'sick_leave',
+  'emergency_leave',
+  'permission',
+  'leave',
+];
 
 export default function AttendanceScreen() {
   const { profile } = useAuth();
@@ -41,7 +58,31 @@ export default function AttendanceScreen() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // "leave" spans a date range instead of the single selected day.
+  const [leaveRangeFor, setLeaveRangeFor] = useState<UserProfile | null>(null);
+  const [fromDay, setFromDay] = useState<string | null>(null);
+  const [fromMonth, setFromMonth] = useState<string | null>(null);
+  const [fromYear, setFromYear] = useState<string | null>(null);
+  const [toDay, setToDay] = useState<string | null>(null);
+  const [toMonth, setToMonth] = useState<string | null>(null);
+  const [toYear, setToYear] = useState<string | null>(null);
+  const [rangeError, setRangeError] = useState<string | null>(null);
+
   const dateKey = useMemo(() => toDateKey(day), [day]);
+
+  const dayOptions = Array.from({ length: 31 }, (_, i) => ({
+    label: String(i + 1),
+    value: String(i + 1),
+  }));
+  const monthOptions = Array.from({ length: 12 }, (_, i) => ({
+    label: monthName(i, language),
+    value: String(i),
+  }));
+  const now = new Date();
+  const yearOptions = Array.from({ length: 3 }, (_, i) => {
+    const y = now.getFullYear() - 1 + i;
+    return { label: String(y), value: String(y) };
+  });
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -72,13 +113,7 @@ export default function AttendanceScreen() {
   const statusBadge = (employeeId: string) => {
     const ex = exceptionFor(employeeId);
     if (!ex) return <Badge label={t('present')} tone="success" />;
-    const labels: Record<AttendanceExceptionType, string> = {
-      absent: t('absent'),
-      sick_leave: t('sickLeave'),
-      emergency_leave: t('emergencyLeave'),
-      permission: t('permission'),
-    };
-    return <Badge label={labels[ex.type]} tone={ex.type === 'absent' ? 'danger' : 'primary'} />;
+    return <Badge label={typeLabels[ex.type]} tone={ex.type === 'absent' ? 'danger' : 'primary'} />;
   };
 
   const shiftDay = (delta: number) => {
@@ -91,8 +126,53 @@ export default function AttendanceScreen() {
     if (!menuFor) return;
     const employee = menuFor;
     setMenuFor(null);
+    if (type === 'leave') {
+      setFromDay(null);
+      setFromMonth(null);
+      setFromYear(null);
+      setToDay(null);
+      setToMonth(null);
+      setToYear(null);
+      setRangeError(null);
+      setNote('');
+      setLeaveRangeFor(employee);
+      return;
+    }
     setNote('');
     setNoteFor({ employee, type });
+  };
+
+  const onSaveLeaveRange = async () => {
+    if (!leaveRangeFor || !profile) return;
+    if (!fromDay || !fromMonth || !fromYear || !toDay || !toMonth || !toYear) return;
+    const from = new Date(Number(fromYear), Number(fromMonth), Number(fromDay));
+    const to = new Date(Number(toYear), Number(toMonth), Number(toDay));
+    if (to < from) {
+      setRangeError(t('invalidDateRange'));
+      return;
+    }
+    setRangeError(null);
+    setBusy(true);
+    try {
+      const employeeId = leaveRangeFor.id;
+      const keys = dateRangeKeys(from, to);
+      for (const date of keys) {
+        await upsertAttendanceException({
+          employee_id: employeeId,
+          date,
+          type: 'leave',
+          note: note.trim() || null,
+          recorded_by: profile.id,
+        });
+      }
+      setLeaveRangeFor(null);
+      setNote('');
+      await load();
+    } catch {
+      // ignore
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onSaveException = async () => {
@@ -133,6 +213,7 @@ export default function AttendanceScreen() {
     sick_leave: t('sickLeave'),
     emergency_leave: t('emergencyLeave'),
     permission: t('permission'),
+    leave: t('leave'),
   };
 
   return (
@@ -225,6 +306,75 @@ export default function AttendanceScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Leave — pick a date range instead of a single day */}
+      <Modal
+        visible={!!leaveRangeFor}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLeaveRangeFor(null)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setLeaveRangeFor(null)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.sheetTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {leaveRangeFor ? `${leaveRangeFor.full_name} — ${t('leave')}` : ''}
+            </Text>
+
+            <Text style={styles.periodSubLabel}>{t('fromDate')}</Text>
+            <View style={[styles.dateFieldRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={styles.dateField}>
+                <Select value={fromDay} options={dayOptions} onChange={setFromDay} placeholder={t('selectDay')} />
+              </View>
+              <View style={styles.dateField}>
+                <Select
+                  value={fromMonth}
+                  options={monthOptions}
+                  onChange={setFromMonth}
+                  placeholder={t('selectMonthLabel')}
+                />
+              </View>
+              <View style={styles.dateField}>
+                <Select value={fromYear} options={yearOptions} onChange={setFromYear} placeholder={t('selectYear')} />
+              </View>
+            </View>
+
+            <Text style={styles.periodSubLabel}>{t('toDate')}</Text>
+            <View style={[styles.dateFieldRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={styles.dateField}>
+                <Select value={toDay} options={dayOptions} onChange={setToDay} placeholder={t('selectDay')} />
+              </View>
+              <View style={styles.dateField}>
+                <Select
+                  value={toMonth}
+                  options={monthOptions}
+                  onChange={setToMonth}
+                  placeholder={t('selectMonthLabel')}
+                />
+              </View>
+              <View style={styles.dateField}>
+                <Select value={toYear} options={yearOptions} onChange={setToYear} placeholder={t('selectYear')} />
+              </View>
+            </View>
+
+            <Input value={note} onChangeText={setNote} placeholder={t('attendanceNote')} multiline />
+
+            {rangeError ? <Text style={styles.error}>{rangeError}</Text> : null}
+
+            <Button
+              title={busy ? t('saving') : t('markAttendance')}
+              onPress={onSaveLeaveRange}
+              loading={busy}
+              icon="checkmark"
+            />
+            <Button
+              title={t('cancel')}
+              variant="outline"
+              onPress={() => setLeaveRangeFor(null)}
+              style={{ marginTop: spacing.sm }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -265,4 +415,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuLabel: { fontSize: 16, fontWeight: '600', color: colors.textDark },
+  periodSubLabel: { fontSize: 13, fontWeight: '700', color: colors.mutedText, marginTop: spacing.md },
+  dateFieldRow: { gap: spacing.sm, marginTop: spacing.xs },
+  dateField: { flex: 1 },
+  error: { color: colors.danger, textAlign: 'center', marginTop: spacing.sm },
 });

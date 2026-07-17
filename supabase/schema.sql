@@ -338,7 +338,7 @@ create table if not exists public.attendance_exceptions (
   id           uuid primary key default gen_random_uuid(),
   employee_id  uuid not null references public.users_profile(id) on delete cascade,
   date         date not null,
-  type         text not null check (type in ('absent', 'sick_leave', 'emergency_leave', 'permission')),
+  type         text not null check (type in ('absent', 'sick_leave', 'emergency_leave', 'permission', 'leave')),
   note         text,
   recorded_by  uuid not null references public.users_profile(id) on delete cascade,
   created_at   timestamptz not null default now(),
