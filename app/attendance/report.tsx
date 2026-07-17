@@ -4,16 +4,26 @@
  * i.e. present for the whole month.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { Avatar, Card, EmptyState, Header, Screen } from '@/components';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Avatar, Button, Card, EmptyState, Header, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { listAttendanceExceptionsForRange, listSupervisions } from '@/lib/api';
 import { monthName } from '@/lib/format';
 import type { AttendanceException, AttendanceExceptionType, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 function monthRange(monthDate: Date): { start: string; end: string } {
   const y = monthDate.getFullYear();
@@ -31,6 +41,8 @@ export default function AttendanceReportScreen() {
   const [subordinates, setSubordinates] = useState<(Supervision & { subordinate: UserProfile })[]>([]);
   const [exceptions, setExceptions] = useState<AttendanceException[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -90,6 +102,127 @@ export default function AttendanceReportScreen() {
     [month, language]
   );
 
+  const buildBody = () => {
+    const rows = subordinates
+      .map((item, i) => {
+        const { counts, total } = countsFor(item.subordinate_id);
+        return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${escapeHtml(item.subordinate.full_name)}</td>
+          <td>${counts.absent}</td>
+          <td>${counts.sick_leave}</td>
+          <td>${counts.emergency_leave}</td>
+          <td>${counts.permission}</td>
+          <td>${total}</td>
+        </tr>`;
+      })
+      .join('');
+
+    return `
+    <style>
+      * { font-family: -apple-system, "Segoe UI", Tahoma, sans-serif; }
+      .report { padding: 32px; color: #1F2937; background:#fff; }
+      .head { display:flex; align-items:center; gap:12px; border-bottom:3px solid #F4B000; padding-bottom:16px; }
+      .title { font-size:24px; font-weight:800; }
+      .sub { color:#6B7280; font-size:13px; margin-top:4px; }
+      table { width:100%; border-collapse:collapse; margin-top:20px; }
+      th, td { border:1px solid #F3E2B3; padding:10px; text-align:${isRTL ? 'right' : 'left'}; font-size:13px; }
+      th { background:#FFF8E6; color:#1F2937; }
+    </style>
+    <div class="report">
+      <div class="head">
+        <div>
+          <div class="title">${t('appName')} — ${t('attendanceReport')}</div>
+          <div class="sub">${label}</div>
+        </div>
+      </div>
+      ${
+        subordinates.length
+          ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
+          : `<p>${t('noData')}</p>`
+      }
+      <p style="margin-top:32px; color:#6B7280; font-size:12px; text-align:center;">${t('developedBy')}</p>
+    </div>`;
+  };
+
+  const buildHtml = () =>
+    `<!DOCTYPE html><html dir="${isRTL ? 'rtl' : 'ltr'}" lang="${isRTL ? 'ar' : 'en'}"><head><meta charset="utf-8" /></head><body>${buildBody()}</body></html>`;
+
+  const onPrint = async () => {
+    setPrinting(true);
+    try {
+      if (Platform.OS === 'web') {
+        const { htmlToPdfBlob } = await import('@/lib/webpdf');
+        const blob = await htmlToPdfBlob(buildBody());
+        const url = URL.createObjectURL(blob);
+        const iframe = document.createElement('iframe');
+        Object.assign(iframe.style, {
+          position: 'fixed',
+          right: '0',
+          bottom: '0',
+          width: '0',
+          height: '0',
+          border: 'none',
+        });
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        };
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }, 60000);
+        return;
+      }
+      await Print.printAsync({ html: buildHtml() });
+    } catch {
+      // user cancelled or unsupported
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  const onShare = async () => {
+    setSharing(true);
+    try {
+      if (Platform.OS === 'web') {
+        const { htmlToPdfBlob } = await import('@/lib/webpdf');
+        const blob = await htmlToPdfBlob(buildBody());
+        const fileName = `enjazaty-attendance-${label}.pdf`;
+        const nav: any = typeof navigator !== 'undefined' ? navigator : undefined;
+        const file =
+          typeof File !== 'undefined'
+            ? new File([blob], fileName, { type: 'application/pdf' })
+            : null;
+        if (file && nav?.canShare && nav.canShare({ files: [file] })) {
+          await nav.share({ files: [file], title: t('attendanceReport') });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+        return;
+      }
+      const { uri } = await Print.printToFileAsync({ html: buildHtml() });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: t('attendanceReport'),
+        });
+      }
+    } catch {
+      // user cancelled or unsupported
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <Screen refreshing={refreshing} onRefresh={load}>
       <Header title={t('attendanceReport')} showBack />
@@ -103,6 +236,28 @@ export default function AttendanceReportScreen() {
           <Ionicons name={isRTL ? 'chevron-back' : 'chevron-forward'} size={20} color={colors.primaryDark} />
         </Pressable>
       </View>
+
+      {subordinates.length > 0 ? (
+        <View style={styles.actions}>
+          <Button
+            title={printing ? t('loading') : t('printReport')}
+            icon="print-outline"
+            onPress={onPrint}
+            loading={printing}
+            fullWidth={false}
+            style={styles.actionBtn}
+          />
+          <Button
+            title={sharing ? t('loading') : t('share')}
+            icon="share-social-outline"
+            variant="secondary"
+            onPress={onShare}
+            loading={sharing}
+            fullWidth={false}
+            style={styles.actionBtn}
+          />
+        </View>
+      ) : null}
 
       {subordinates.length === 0 ? (
         <EmptyState icon="stats-chart-outline" message={t('noSubordinatesForAttendance')} />
@@ -146,6 +301,8 @@ export default function AttendanceReportScreen() {
 }
 
 const styles = StyleSheet.create({
+  actions: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
+  actionBtn: { flex: 1 },
   monthRow: { alignItems: 'center', justifyContent: 'center', gap: spacing.lg, marginBottom: spacing.lg },
   monthArrow: {
     width: 36,
