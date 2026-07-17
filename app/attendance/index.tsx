@@ -165,7 +165,10 @@ export default function AttendanceScreen() {
                 <Text style={styles.name}>{item.subordinate.full_name}</Text>
                 <Text style={styles.sub}>{item.subordinate.user_code}</Text>
               </View>
-              {statusBadge(item.subordinate.id)}
+              <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
+                {statusBadge(item.subordinate.id)}
+                <Text style={styles.rowDate}>{formatDate(day.toISOString(), language)}</Text>
+              </View>
             </View>
           </Card>
         ))
@@ -176,6 +179,7 @@ export default function AttendanceScreen() {
         <Pressable style={styles.backdrop} onPress={() => setMenuFor(null)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>{menuFor?.full_name}</Text>
+            <Text style={styles.sheetDate}>{formatDate(day.toISOString(), language)}</Text>
 
             {exceptionFor(menuFor?.id ?? '') ? (
               <Pressable
@@ -210,7 +214,10 @@ export default function AttendanceScreen() {
         <Pressable style={styles.backdrop} onPress={() => setNoteFor(null)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={[styles.sheetTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
-              {noteFor ? typeLabels[noteFor.type] : ''}
+              {noteFor ? `${noteFor.employee.full_name} — ${typeLabels[noteFor.type]}` : ''}
+            </Text>
+            <Text style={[styles.sheetDate, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {formatDate(day.toISOString(), language)}
             </Text>
             <Input value={note} onChangeText={setNote} placeholder={t('attendanceNote')} multiline />
             <Button title={busy ? t('saving') : t('markAttendance')} onPress={onSaveException} loading={busy} icon="checkmark" />
@@ -245,7 +252,9 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textDark, marginBottom: spacing.lg },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: colors.textDark },
+  sheetDate: { fontSize: 13, color: colors.mutedText, marginTop: 2, marginBottom: spacing.lg },
+  rowDate: { fontSize: 11, color: colors.mutedText, marginTop: 4 },
   menuRow: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   menuIcon: {
     width: 44,

@@ -362,6 +362,9 @@ export const translations = {
     thisMonth: 'هذا الشهر',
     totalDays: 'الإجمالي',
     noExceptionsThisMonth: 'لا توجد حالات غياب أو استئذان هذا الشهر',
+    attendanceDate: 'التاريخ',
+    attendanceType: 'النوع',
+    attendanceDetails: 'تفاصيل الحالات',
   },
 
   en: {
@@ -689,6 +692,9 @@ export const translations = {
     thisMonth: 'This month',
     totalDays: 'Total',
     noExceptionsThisMonth: 'No absences or permissions this month',
+    attendanceDate: 'Date',
+    attendanceType: 'Type',
+    attendanceDetails: 'Exception details',
   },
 } as const;
 

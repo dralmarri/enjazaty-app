@@ -13,7 +13,7 @@ import { Avatar, Button, Card, EmptyState, Header, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { listAttendanceExceptionsForRange, listSupervisions } from '@/lib/api';
-import { monthName } from '@/lib/format';
+import { formatDate, monthName } from '@/lib/format';
 import type { AttendanceException, AttendanceExceptionType, Supervision, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -119,6 +119,21 @@ export default function AttendanceReportScreen() {
       })
       .join('');
 
+    const detailRows = [...exceptions]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((ex, i) => {
+        const emp = subordinates.find((s) => s.subordinate_id === ex.employee_id)?.subordinate;
+        return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${formatDate(ex.date, language)}</td>
+          <td>${escapeHtml(emp?.full_name ?? '')}</td>
+          <td>${escapeHtml(typeLabels[ex.type])}</td>
+          <td>${escapeHtml(ex.note ?? '—')}</td>
+        </tr>`;
+      })
+      .join('');
+
     return `
     <style>
       * { font-family: -apple-system, "Segoe UI", Tahoma, sans-serif; }
@@ -126,7 +141,8 @@ export default function AttendanceReportScreen() {
       .head { display:flex; align-items:center; gap:12px; border-bottom:3px solid #F4B000; padding-bottom:16px; }
       .title { font-size:24px; font-weight:800; }
       .sub { color:#6B7280; font-size:13px; margin-top:4px; }
-      table { width:100%; border-collapse:collapse; margin-top:20px; }
+      h3 { margin-top:28px; }
+      table { width:100%; border-collapse:collapse; margin-top:12px; }
       th, td { border:1px solid #F3E2B3; padding:10px; text-align:${isRTL ? 'right' : 'left'}; font-size:13px; }
       th { background:#FFF8E6; color:#1F2937; }
     </style>
@@ -141,6 +157,11 @@ export default function AttendanceReportScreen() {
         subordinates.length
           ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
           : `<p>${t('noData')}</p>`
+      }
+      ${
+        exceptions.length
+          ? `<h3>${t('attendanceDetails')}</h3><table><thead><tr><th>#</th><th>${t('attendanceDate')}</th><th>${t('employees')}</th><th>${t('attendanceType')}</th><th>${t('attendanceNote')}</th></tr></thead><tbody>${detailRows}</tbody></table>`
+          : ''
       }
       <p style="margin-top:32px; color:#6B7280; font-size:12px; text-align:center;">${t('developedBy')}</p>
     </div>`;
@@ -264,6 +285,9 @@ export default function AttendanceReportScreen() {
       ) : (
         subordinates.map((item) => {
           const { counts, total } = countsFor(item.subordinate_id);
+          const employeeExceptions = exceptions
+            .filter((e) => e.employee_id === item.subordinate_id)
+            .sort((a, b) => a.date.localeCompare(b.date));
           return (
             <Card key={item.id} style={styles.card}>
               <View style={[styles.row, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -280,17 +304,30 @@ export default function AttendanceReportScreen() {
               {total === 0 ? (
                 <Text style={styles.empty}>{t('noExceptionsThisMonth')}</Text>
               ) : (
-                <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  {(Object.keys(counts) as AttendanceExceptionType[])
-                    .filter((k) => counts[k] > 0)
-                    .map((k) => (
-                      <View key={k} style={styles.chip}>
-                        <Text style={styles.chipText}>
-                          {typeLabels[k]}: {counts[k]}
-                        </Text>
+                <>
+                  <View style={[styles.chips, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                    {(Object.keys(counts) as AttendanceExceptionType[])
+                      .filter((k) => counts[k] > 0)
+                      .map((k) => (
+                        <View key={k} style={styles.chip}>
+                          <Text style={styles.chipText}>
+                            {typeLabels[k]}: {counts[k]}
+                          </Text>
+                        </View>
+                      ))}
+                  </View>
+                  <View style={styles.dateList}>
+                    {employeeExceptions.map((ex) => (
+                      <View
+                        key={ex.id}
+                        style={[styles.dateRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                      >
+                        <Text style={styles.dateRowDate}>{formatDate(ex.date, language)}</Text>
+                        <Text style={styles.dateRowType}>{typeLabels[ex.type]}</Text>
                       </View>
                     ))}
-                </View>
+                  </View>
+                </>
               )}
             </Card>
           );
@@ -327,4 +364,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   chipText: { fontSize: 12, fontWeight: '700', color: colors.primaryDark },
+  dateList: { marginTop: spacing.sm, gap: 4 },
+  dateRow: { justifyContent: 'space-between' },
+  dateRowDate: { fontSize: 12, color: colors.textDark, fontWeight: '600' },
+  dateRowType: { fontSize: 12, color: colors.mutedText },
 });
