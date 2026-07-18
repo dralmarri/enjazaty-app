@@ -123,18 +123,33 @@ export default function AttendanceReportScreen() {
       })
       .join('');
 
-    const detailRows = [...exceptions]
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .map((ex, i) => {
-        const emp = subordinates.find((s) => s.subordinate_id === ex.employee_id)?.subordinate;
+    // One clean, self-contained block per employee who actually has an
+    // exception this month — instead of one long table mixing everyone's
+    // dates together, which made it hard to find any one person's record.
+    const employeeSections = subordinates
+      .map((item) => {
+        const employeeExceptions = exceptions
+          .filter((e) => e.employee_id === item.subordinate_id)
+          .sort((a, b) => a.date.localeCompare(b.date));
+        if (employeeExceptions.length === 0) return '';
+
+        const detailRows = employeeExceptions
+          .map(
+            (ex, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${formatDate(ex.date, language)}</td>
+            <td>${escapeHtml(typeLabels[ex.type])}</td>
+            <td>${escapeHtml(ex.note ?? '—')}</td>
+          </tr>`
+          )
+          .join('');
+
         return `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${formatDate(ex.date, language)}</td>
-          <td>${escapeHtml(emp?.full_name ?? '')}</td>
-          <td>${escapeHtml(typeLabels[ex.type])}</td>
-          <td>${escapeHtml(ex.note ?? '—')}</td>
-        </tr>`;
+        <div class="employee-section">
+          <h4>${escapeHtml(item.subordinate.full_name)} <span class="muted">(${escapeHtml(item.subordinate.job_title ?? '—')})</span></h4>
+          <table><thead><tr><th>#</th><th>${t('attendanceDate')}</th><th>${t('attendanceType')}</th><th>${t('attendanceNote')}</th></tr></thead><tbody>${detailRows}</tbody></table>
+        </div>`;
       })
       .join('');
 
@@ -145,8 +160,11 @@ export default function AttendanceReportScreen() {
       .head { display:flex; align-items:center; gap:12px; border-bottom:3px solid #F4B000; padding-bottom:16px; }
       .title { font-size:24px; font-weight:800; }
       .sub { color:#6B7280; font-size:13px; margin-top:4px; }
+      .muted { color:#6B7280; font-weight:400; font-size:13px; }
       h3 { margin-top:28px; }
-      table { width:100%; border-collapse:collapse; margin-top:12px; }
+      h4 { margin: 20px 0 4px; font-size: 14px; }
+      .employee-section { break-inside: avoid; page-break-inside: avoid; }
+      table { width:100%; border-collapse:collapse; margin-top:8px; }
       th, td { border:1px solid #F3E2B3; padding:10px; text-align:${isRTL ? 'right' : 'left'}; font-size:13px; }
       th { background:#FFF8E6; color:#1F2937; }
     </style>
@@ -162,11 +180,7 @@ export default function AttendanceReportScreen() {
           ? `<table><thead><tr><th>#</th><th>${t('employees')}</th><th>${t('jobTitle')}</th><th>${t('absent')}</th><th>${t('sickLeave')}</th><th>${t('emergencyLeave')}</th><th>${t('permission')}</th><th>${t('leave')}</th><th>${t('totalDays')}</th></tr></thead><tbody>${rows}</tbody></table>`
           : `<p>${t('noData')}</p>`
       }
-      ${
-        exceptions.length
-          ? `<h3>${t('attendanceDetails')}</h3><table><thead><tr><th>#</th><th>${t('attendanceDate')}</th><th>${t('employees')}</th><th>${t('attendanceType')}</th><th>${t('attendanceNote')}</th></tr></thead><tbody>${detailRows}</tbody></table>`
-          : ''
-      }
+      ${exceptions.length ? `<h3>${t('attendanceDetails')}</h3>${employeeSections}` : ''}
       <p style="margin-top:32px; color:#6B7280; font-size:12px; text-align:center;">${t('developedBy')}</p>
     </div>`;
   };
