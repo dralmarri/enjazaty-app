@@ -578,6 +578,36 @@ export async function listSupervisions(
   return (data ?? []) as any;
 }
 
+/**
+ * Every user below `supervisorId` in the supervision chain — direct
+ * subordinates plus everyone under the sub-admins below him (any depth).
+ * Used by the search screen so a supervisor can find his people by name.
+ */
+export async function listSupervisedUsers(supervisorId: string): Promise<UserProfile[]> {
+  const found = new Map<string, UserProfile>();
+  const visited = new Set<string>([supervisorId]);
+  let frontier = [supervisorId];
+
+  // Depth guard: the chain is shallow in practice, this just avoids a loop.
+  for (let depth = 0; depth < 6 && frontier.length > 0; depth++) {
+    const { data, error } = await supabase
+      .from('supervisions')
+      .select('subordinate:subordinate_id (*)')
+      .in('supervisor_id', frontier);
+    if (error) throw error;
+    const next: string[] = [];
+    for (const row of (data ?? []) as any[]) {
+      const sub = row.subordinate as UserProfile | null;
+      if (!sub || visited.has(sub.id)) continue;
+      visited.add(sub.id);
+      found.set(sub.id, sub);
+      next.push(sub.id);
+    }
+    frontier = next;
+  }
+  return Array.from(found.values());
+}
+
 export async function addSupervision(input: {
   supervisor_id: string;
   subordinate_id: string;

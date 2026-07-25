@@ -1,6 +1,7 @@
 /**
- * Search tab — search your achievements by title/description, and look up a
- * user by their User ID.
+ * Search tab — search your achievements by title/description, search the
+ * employees you supervise by name (or User ID / job title), and look up any
+ * user by their exact User ID.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -8,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import {
   AchievementRow,
+  Avatar,
   Card,
   EmptyState,
   Header,
@@ -16,7 +18,7 @@ import {
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfileByCode, listAchievements } from '@/lib/api';
+import { getProfileByCode, listAchievements, listSupervisedUsers } from '@/lib/api';
 import type { Achievement, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
@@ -25,12 +27,18 @@ export default function SearchScreen() {
   const { t, language, isRTL } = useLanguage();
   const [query, setQuery] = useState('');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [team, setTeam] = useState<UserProfile[]>([]);
   const [foundUser, setFoundUser] = useState<UserProfile | null>(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
     try {
-      setAchievements(await listAchievements(profile.id));
+      const [mine, supervised] = await Promise.all([
+        listAchievements(profile.id),
+        listSupervisedUsers(profile.id),
+      ]);
+      setAchievements(mine);
+      setTeam(supervised);
     } catch {
       // ignore
     }
@@ -52,6 +60,19 @@ export default function SearchScreen() {
         (a.description ?? '').toLowerCase().includes(q)
     );
   }, [query, achievements]);
+
+  // Employees under this user (any depth) matching the query by name, User ID
+  // or job title.
+  const teamResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return team.filter(
+      (u) =>
+        u.full_name.toLowerCase().includes(q) ||
+        u.user_code.toLowerCase().includes(q) ||
+        (u.job_title ?? '').toLowerCase().includes(q)
+    );
+  }, [query, team]);
 
   // If the query looks like a User ID, try to resolve it.
   const onLookupUser = useCallback(async () => {
@@ -77,8 +98,39 @@ export default function SearchScreen() {
         returnKeyType="search"
       />
 
+      {/* Employees you supervise, matched by name / User ID / job title */}
+      {teamResults.length > 0 ? (
+        <>
+          <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('employees')}
+          </Text>
+          {teamResults.map((u) => (
+            <Card
+              key={u.id}
+              style={styles.userCard}
+              onPress={() => router.push(`/employees/${u.id}`)}
+            >
+              <View style={[styles.userRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Avatar name={u.full_name} uri={u.avatar_url} size={44} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.userName}>{u.full_name}</Text>
+                  <Text style={styles.userSub}>
+                    {u.job_title ? `${u.job_title} · ${u.user_code}` : u.user_code}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={20}
+                  color={colors.mutedText}
+                />
+              </View>
+            </Card>
+          ))}
+        </>
+      ) : null}
+
       {/* Resolved user (by User ID) */}
-      {foundUser ? (
+      {foundUser && !teamResults.some((u) => u.id === foundUser.id) ? (
         <Card
           style={styles.userCard}
           onPress={() => router.push(`/employees/${foundUser.id}`)}
@@ -103,7 +155,7 @@ export default function SearchScreen() {
       {/* Achievement results */}
       {query.trim().length === 0 ? (
         <EmptyState icon="search-outline" message={t('searchHint')} />
-      ) : results.length === 0 && !foundUser ? (
+      ) : results.length === 0 && teamResults.length === 0 && !foundUser ? (
         <EmptyState icon="search-outline" message={t('noResults')} />
       ) : (
         results.map((item) => (
@@ -121,6 +173,12 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textDark,
+    marginBottom: spacing.sm,
+  },
   userCard: { marginBottom: spacing.md },
   userRow: { alignItems: 'center', gap: spacing.md },
   userName: { fontSize: 15, fontWeight: '800', color: colors.textDark },
