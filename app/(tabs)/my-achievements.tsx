@@ -25,6 +25,7 @@ import {
   deleteFolder,
   listAchievements,
   listRootFolders,
+  updateFolderKind,
   updateFolderName,
   updateFolderParent,
 } from '@/lib/api';
@@ -106,6 +107,17 @@ export default function MyAchievementsScreen() {
   const onDeleteFolder = async (folderId: string) => {
     try {
       await deleteFolder(folderId);
+      await load();
+    } catch {
+      // ignore
+    }
+  };
+
+  /** Reclassify an achievement folder as an employee folder (workspace tab). */
+  const onMoveToTeam = async (folderId: string) => {
+    if (!profile) return;
+    try {
+      await updateFolderKind(folderId, profile.id, 'employees');
       await load();
     } catch {
       // ignore
@@ -335,6 +347,20 @@ export default function MyAchievementsScreen() {
                 <Ionicons name="swap-horizontal-outline" size={22} color={colors.primaryDark} />
               </View>
               <Text style={styles.menuLabel}>{t('moveTo')}</Text>
+            </Pressable>
+            {/* Send the folder over to the team side of the app. */}
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = folderMenu;
+                setFolderMenu(null);
+                if (f) onMoveToTeam(f.id);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="people-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('moveToTeam')}</Text>
             </Pressable>
             <Pressable
               style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}

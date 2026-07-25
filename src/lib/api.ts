@@ -218,6 +218,45 @@ export async function updateFolderParent(
   if (error) throw error;
 }
 
+/**
+ * Move a folder to the other side of the app — from the My achievements tab to
+ * the workspace (team) tab or back. Sub-folders always follow their parent, and
+ * the folder is lifted to the root so it never stays nested under a folder of
+ * the other kind.
+ */
+export async function updateFolderKind(
+  id: string,
+  ownerId: string,
+  kind: FolderKind
+): Promise<void> {
+  const all = await listFolders(ownerId);
+
+  // The folder plus everything nested under it, at any depth.
+  const ids = new Set<string>([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const f of all) {
+      if (f.parent_id && ids.has(f.parent_id) && !ids.has(f.id)) {
+        ids.add(f.id);
+        grew = true;
+      }
+    }
+  }
+
+  const { error } = await supabase
+    .from('folders')
+    .update({ kind })
+    .in('id', Array.from(ids));
+  if (error) throw error;
+
+  const { error: rootError } = await supabase
+    .from('folders')
+    .update({ parent_id: null })
+    .eq('id', id);
+  if (rootError) throw rootError;
+}
+
 /** Rename a folder. */
 export async function updateFolderName(id: string, name: string): Promise<void> {
   const { error } = await supabase

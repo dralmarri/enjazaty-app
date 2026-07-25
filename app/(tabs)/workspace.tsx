@@ -16,6 +16,7 @@ import {
   deleteFolder,
   listNotifications,
   listRootFolders,
+  updateFolderKind,
   updateFolderName,
   updateFolderParent,
 } from '@/lib/api';
@@ -57,6 +58,21 @@ export default function WorkspaceScreen() {
       }
     },
     [] // load is stable enough; folders refresh via focus
+  );
+
+  /** Reclassify an employee folder as an achievement folder (its own tab). */
+  const onMoveToAchievements = useCallback(
+    async (folderId: string) => {
+      if (!profile) return;
+      try {
+        await updateFolderKind(folderId, profile.id, 'achievements');
+        await load();
+      } catch {
+        // ignore
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [profile]
   );
 
   const onMoveFolder = useCallback(async (folderId: string, parentId: string | null) => {
@@ -277,6 +293,20 @@ export default function WorkspaceScreen() {
                 <Ionicons name="swap-horizontal-outline" size={22} color={colors.primaryDark} />
               </View>
               <Text style={styles.menuLabel}>{t('moveTo')}</Text>
+            </Pressable>
+            {/* Send the folder over to the achievements side of the app. */}
+            <Pressable
+              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              onPress={() => {
+                const f = folderMenu;
+                setFolderMenu(null);
+                if (f) onMoveToAchievements(f.id);
+              }}
+            >
+              <View style={styles.menuIcon}>
+                <Ionicons name="documents-outline" size={22} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.menuLabel}>{t('moveToMyAchievements')}</Text>
             </Pressable>
             <Pressable
               style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
