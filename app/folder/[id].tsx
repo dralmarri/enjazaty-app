@@ -104,7 +104,9 @@ export default function FolderContentsScreen() {
         setFolderEmployees(emps);
         // Owner-only extras: target folders for the move menu.
         if (f.owner_id === profile?.id) {
-          setAllFolders(await listFolders(profile.id));
+          // Only folders of the same kind are valid move targets — an
+          // achievement folder never nests inside an employee folder.
+          setAllFolders(await listFolders(profile.id, f.kind));
         }
       }
     } finally {
@@ -188,6 +190,9 @@ export default function FolderContentsScreen() {
   if (loading) return <Loading />;
 
   const isOwner = folder?.owner_id === profile?.id;
+  // Employee folders hold people, achievement folders hold files — the add
+  // menu below offers only what belongs in this folder (migration_v20.sql).
+  const isEmployeeFolder = folder?.kind === 'employees';
   const empty = subFolders.length === 0 && achievements.length === 0;
 
   return (
@@ -279,23 +284,25 @@ export default function FolderContentsScreen() {
         <Pressable style={styles.backdrop} onPress={() => setAddMenu(false)}>
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>{t('addItem')}</Text>
+            {!isEmployeeFolder ? (
+              <Pressable
+                style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={() => {
+                  setAddMenu(false);
+                  router.push(`/achievement/new?folder=${id}`);
+                }}
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons name="trophy-outline" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.menuLabel}>{t('addAchievementType')}</Text>
+              </Pressable>
+            ) : null}
             <Pressable
               style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
               onPress={() => {
                 setAddMenu(false);
-                router.push(`/achievement/new?folder=${id}`);
-              }}
-            >
-              <View style={styles.menuIcon}>
-                <Ionicons name="trophy-outline" size={22} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.menuLabel}>{t('addAchievementType')}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              onPress={() => {
-                setAddMenu(false);
-                router.push(`/folder/new?parent=${id}`);
+                router.push(`/folder/new?parent=${id}&kind=${folder?.kind ?? 'achievements'}`);
               }}
             >
               <View style={styles.menuIcon}>
@@ -303,18 +310,20 @@ export default function FolderContentsScreen() {
               </View>
               <Text style={styles.menuLabel}>{t('addSubFolder')}</Text>
             </Pressable>
-            <Pressable
-              style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-              onPress={() => {
-                setAddMenu(false);
-                setEmpModal(true);
-              }}
-            >
-              <View style={styles.menuIcon}>
-                <Ionicons name="person-add-outline" size={22} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.menuLabel}>{t('addEmployee')}</Text>
-            </Pressable>
+            {isEmployeeFolder ? (
+              <Pressable
+                style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={() => {
+                  setAddMenu(false);
+                  setEmpModal(true);
+                }}
+              >
+                <View style={styles.menuIcon}>
+                  <Ionicons name="person-add-outline" size={22} color={colors.primaryDark} />
+                </View>
+                <Text style={styles.menuLabel}>{t('addEmployee')}</Text>
+              </Pressable>
+            ) : null}
           </Pressable>
         </Pressable>
       </Modal>

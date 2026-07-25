@@ -1,6 +1,7 @@
 /**
- * Create a folder (reached from the home "Add achievement → Folder" menu).
- * Folders organize achievements and are used when placing supervised employees.
+ * Create a folder. Which side the folder belongs to is decided by where the
+ * user came from — `?kind=achievements` (My achievements tab) or
+ * `?kind=employees` (workspace / team tab) — so nothing extra is asked here.
  */
 import React, { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
@@ -9,6 +10,7 @@ import { Button, Header, Input, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { createFolder } from '@/lib/api';
+import type { FolderKind } from '@/types/database';
 import { colors, spacing } from '@/theme/colors';
 
 export default function NewFolderScreen() {
@@ -16,7 +18,11 @@ export default function NewFolderScreen() {
   const { t } = useLanguage();
   // ?parent = create this folder INSIDE another folder (a sub-folder).
   // ?owner  = create it inside another user's (employee's) workspace.
-  const { parent, owner } = useLocalSearchParams<{ parent?: string; owner?: string }>();
+  const { parent, owner, kind } = useLocalSearchParams<{
+    parent?: string;
+    owner?: string;
+    kind?: FolderKind;
+  }>();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -35,6 +41,7 @@ export default function NewFolderScreen() {
         description: description.trim() || null,
         owner_id: owner ?? profile.id,
         parent_id: parent ?? null,
+        kind: kind === 'employees' ? 'employees' : 'achievements',
       });
       router.back();
     } catch (e: any) {

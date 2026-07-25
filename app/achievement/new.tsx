@@ -74,7 +74,7 @@ export default function NewAchievementScreen() {
     try {
       // When adding on behalf of an employee (?owner), show THEIR folders so
       // the achievement is filed under a folder the employee actually owns.
-      setFolders(await listFolders(owner ?? profile.id));
+      setFolders(await listFolders(owner ?? profile.id, 'achievements'));
     } catch {
       // ignore
     }

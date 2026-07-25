@@ -199,6 +199,10 @@ No Xcode needed — EAS builds in the cloud.
 - **Hierarchical permissions** (`migration_v7.sql`): a supervisor sees everyone
   below them in the chain (any depth), and nothing outside their chain. Uses the
   recursive `in_supervision_chain()` function.
+- **Folders are split by `kind`** (`migration_v20.sql`): `achievements` folders
+  belong to the "إنجازاتي / My achievements" tab, `employees` folders to the
+  workspace (team) tab. Always pass the right `kind` to `listFolders` /
+  `listRootFolders` / `createFolder` so the two sides never mix again.
 - **Signatures** are stored as drawn strokes and MUST render through
   `SignatureView` (it draws them). Never print the raw stroke text.
 - **Print / Share / Save** on an achievement act on the **original attached file**

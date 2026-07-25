@@ -62,7 +62,7 @@ export default function AchievementDetailsScreen() {
       setEvaluation(evalReport);
       // Load the owner's folders so they can move this achievement.
       if (ach && ach.owner_id === profile?.id) {
-        setFolders(await listFolders(ach.owner_id));
+        setFolders(await listFolders(ach.owner_id, 'achievements'));
       }
     } finally {
       setLoading(false);

@@ -15,6 +15,7 @@ import type {
   Department,
   Evaluation,
   Folder,
+  FolderKind,
   Note,
   NoteType,
   Signature,
@@ -131,24 +132,32 @@ export async function createDepartment(input: {
 
 /* --------------------------------- Folders ------------------------------- */
 
-export async function listFolders(ownerId: string): Promise<Folder[]> {
-  const { data, error } = await supabase
-    .from('folders')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .order('created_at', { ascending: false });
+export async function listFolders(
+  ownerId: string,
+  kind?: FolderKind
+): Promise<Folder[]> {
+  let query = supabase.from('folders').select('*').eq('owner_id', ownerId);
+  if (kind) query = query.eq('kind', kind);
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Folder[];
 }
 
-/** Top-level folders only (no parent). Used on home / employee profile. */
-export async function listRootFolders(ownerId: string): Promise<Folder[]> {
-  const { data, error } = await supabase
+/**
+ * Top-level folders only (no parent). Used on home / employee profile.
+ * Pass `kind` to get just the achievement folders or just the employee ones.
+ */
+export async function listRootFolders(
+  ownerId: string,
+  kind?: FolderKind
+): Promise<Folder[]> {
+  let query = supabase
     .from('folders')
     .select('*')
     .eq('owner_id', ownerId)
-    .is('parent_id', null)
-    .order('created_at', { ascending: false });
+    .is('parent_id', null);
+  if (kind) query = query.eq('kind', kind);
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Folder[];
 }
@@ -181,6 +190,7 @@ export async function createFolder(input: {
   parent_id?: string | null;
   department_id?: string | null;
   color?: string | null;
+  kind?: FolderKind;
 }): Promise<Folder> {
   const { data, error } = await supabase
     .from('folders')

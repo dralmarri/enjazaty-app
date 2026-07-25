@@ -1,46 +1,34 @@
 /**
- * Screen 4 — Smart home / workspace.
- * Greeting with name + job title + today's date, two primary actions
- * (Add achievement [dropdown], Manage employees) side by side, a View Members
- * entry, and the most recent achievements.
+ * Workspace home — everything about the user's TEAM: greeting, manage/view
+ * employees, attendance, and the employee folders.
+ *
+ * The user's own achievement files and folders live in the "My achievements"
+ * tab; the two sides are kept apart by `folders.kind` (migration_v20.sql).
  */
 import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import {
-  AchievementRow,
-  Avatar,
-  Button,
-  Card,
-  EmptyState,
-  Input,
-  Screen,
-  SectionTitle,
-} from '@/components';
+import { Avatar, Button, Input, Screen, SectionTitle } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   deleteFolder,
-  listAchievements,
   listNotifications,
   listRootFolders,
   updateFolderName,
   updateFolderParent,
 } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import type { Achievement, Folder } from '@/types/database';
+import type { Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 export default function WorkspaceScreen() {
   const { profile, isAdmin } = useAuth();
   const { t, language, isRTL } = useLanguage();
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [addMenu, setAddMenu] = useState(false);
-  const [fileMenu, setFileMenu] = useState(false);
   // Long-press folder editing.
   const [folderMenu, setFolderMenu] = useState<Folder | null>(null);
   const [moveMenu, setMoveMenu] = useState<Folder | null>(null);
@@ -83,12 +71,10 @@ export default function WorkspaceScreen() {
     if (!profile) return;
     try {
       setRefreshing(true);
-      const [achs, fdrs, notifs] = await Promise.all([
-        listAchievements(profile.id),
-        listRootFolders(profile.id),
+      const [fdrs, notifs] = await Promise.all([
+        listRootFolders(profile.id, 'employees'),
         listNotifications(profile.id),
       ]);
-      setAchievements(achs);
       setFolders(fdrs);
       setUnread(notifs.filter((n) => !n.read).length);
     } catch {
@@ -106,57 +92,6 @@ export default function WorkspaceScreen() {
 
   // Today's Gregorian date, shown under the greeting.
   const today = formatDate(new Date().toISOString(), language);
-
-  // First level: Folder or File.
-  const addOptions: {
-    key: string;
-    label: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    onPress: () => void;
-  }[] = [
-    {
-      key: 'folder',
-      label: t('typeFolder'),
-      icon: 'folder-outline',
-      onPress: () => router.push('/folder/new'),
-    },
-    {
-      key: 'file',
-      label: t('typeFile'),
-      icon: 'document-outline',
-      onPress: () => {
-        setAddMenu(false);
-        setFileMenu(true);
-      },
-    },
-  ];
-
-  // Second level (when "File" is chosen): where to get the file from.
-  const fileOptions: {
-    key: string;
-    label: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    onPress: () => void;
-  }[] = [
-    {
-      key: 'library',
-      label: t('fromLibrary'),
-      icon: 'images-outline',
-      onPress: () => router.push('/achievement/new?source=library'),
-    },
-    {
-      key: 'camera',
-      label: t('fromCamera'),
-      icon: 'camera-outline',
-      onPress: () => router.push('/achievement/new?source=camera'),
-    },
-    {
-      key: 'files',
-      label: t('fromFiles'),
-      icon: 'document-outline',
-      onPress: () => router.push('/achievement/new?source=files'),
-    },
-  ];
 
   return (
     <Screen refreshing={refreshing} onRefresh={load}>
@@ -192,22 +127,27 @@ export default function WorkspaceScreen() {
         <Avatar name={profile?.full_name} uri={profile?.avatar_url} size={56} />
       </View>
 
-      {/* Two primary actions side by side */}
+      {/* Two primary team actions side by side */}
       <View style={styles.actionsRow}>
-        <Pressable style={styles.actionCard} onPress={() => setAddMenu(true)}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="add-circle-outline" size={26} color={colors.primaryDark} />
-          </View>
-          <Text style={styles.actionLabel}>{t('addAchievementType')}</Text>
-        </Pressable>
-
         {isAdmin ? (
-          <Pressable style={styles.actionCard} onPress={() => router.push('/employees')}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="people-outline" size={26} color={colors.primaryDark} />
-            </View>
-            <Text style={styles.actionLabel}>{t('manageEmployees')}</Text>
-          </Pressable>
+          <>
+            <Pressable style={styles.actionCard} onPress={() => router.push('/employees')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="people-outline" size={26} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.actionLabel}>{t('manageEmployees')}</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.actionCard}
+              onPress={() => router.push('/folder/new?kind=employees')}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="folder-open-outline" size={26} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.actionLabel}>{t('newFolder')}</Text>
+            </Pressable>
+          </>
         ) : (
           <Pressable style={styles.actionCard} onPress={() => router.push('/members')}>
             <View style={styles.actionIcon}>
@@ -217,6 +157,24 @@ export default function WorkspaceScreen() {
           </Pressable>
         )}
       </View>
+
+      {/* Shortcut to the user's own achievements (they live in their own tab) */}
+      <Pressable style={styles.membersCard} onPress={() => router.push('/my-achievements')}>
+        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={styles.actionIcon}>
+            <Ionicons name="documents-outline" size={24} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.membersTitle}>{t('myAchievements')}</Text>
+            <Text style={styles.membersHint}>{t('myAchievementsHint')}</Text>
+          </View>
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={20}
+            color={colors.mutedText}
+          />
+        </View>
+      </Pressable>
 
       {/* Attendance — every user can mark/view attendance for their own direct
           subordinates (empty state shown if they have none). */}
@@ -257,10 +215,10 @@ export default function WorkspaceScreen() {
         </Pressable>
       ) : null}
 
-      {/* Folders (workspace) */}
+      {/* Employee folders (the team side of the workspace) */}
       {folders.length > 0 ? (
         <>
-          <SectionTitle title={t('folders')} />
+          <SectionTitle title={t('teamFolders')} />
           <View style={styles.folderGrid}>
             {folders.map((f) => (
               <Pressable
@@ -280,50 +238,6 @@ export default function WorkspaceScreen() {
           <Text style={styles.hint}>{t('longPressHint')}</Text>
         </>
       ) : null}
-
-      {/* Recent achievements */}
-      <SectionTitle
-        title={t('recentAchievements')}
-        actionLabel={t('myAchievements')}
-        onAction={() => router.push('/(tabs)/activity')}
-      />
-      {achievements.length === 0 ? (
-        <EmptyState message={t('noAchievements')} hint={t('addAchievementType')} />
-      ) : (
-        achievements.slice(0, 5).map((item) => (
-          <AchievementRow
-            key={item.id}
-            achievement={item}
-            editable
-            onChanged={load}
-            onPress={() => router.push(`/achievement/${item.id}`)}
-          />
-        ))
-      )}
-
-      {/* Add-achievement dropdown */}
-      <Modal visible={addMenu} transparent animationType="fade" onRequestClose={() => setAddMenu(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setAddMenu(false)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.sheetTitle}>{t('addAchievementType')}</Text>
-            {addOptions.map((opt) => (
-              <Pressable
-                key={opt.key}
-                style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                onPress={() => {
-                  setAddMenu(false);
-                  opt.onPress();
-                }}
-              >
-                <View style={styles.menuIcon}>
-                  <Ionicons name={opt.icon} size={22} color={colors.primaryDark} />
-                </View>
-                <Text style={styles.menuLabel}>{opt.label}</Text>
-              </Pressable>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
 
       {/* Folder long-press actions: move / delete */}
       <Modal
@@ -458,29 +372,6 @@ export default function WorkspaceScreen() {
         </Pressable>
       </Modal>
 
-      {/* File source submenu (library / camera / files) */}
-      <Modal visible={fileMenu} transparent animationType="fade" onRequestClose={() => setFileMenu(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setFileMenu(false)}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.sheetTitle}>{t('typeFile')}</Text>
-            {fileOptions.map((opt) => (
-              <Pressable
-                key={opt.key}
-                style={[styles.menuRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                onPress={() => {
-                  setFileMenu(false);
-                  opt.onPress();
-                }}
-              >
-                <View style={styles.menuIcon}>
-                  <Ionicons name={opt.icon} size={22} color={colors.primaryDark} />
-                </View>
-                <Text style={styles.menuLabel}>{opt.label}</Text>
-              </Pressable>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
     </Screen>
   );
 }

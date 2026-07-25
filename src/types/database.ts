@@ -53,6 +53,12 @@ export interface Department {
 }
 
 /** folders — nested containers for organizing files/achievements. */
+/**
+ * What a folder holds. 'achievements' folders live in the My achievements tab,
+ * 'employees' folders in the workspace (team) tab — see migration_v20.sql.
+ */
+export type FolderKind = 'achievements' | 'employees';
+
 export interface Folder {
   id: string;
   name: string;
@@ -61,6 +67,7 @@ export interface Folder {
   parent_id: string | null; // for nesting
   department_id: string | null;
   owner_id: string;
+  kind: FolderKind;
   created_at: string;
 }
 

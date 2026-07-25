@@ -13,11 +13,17 @@ import { colors, spacing } from '@/theme/colors';
 
 const TABS: {
   key: string;
-  href: '/workspace' | '/activity' | '/search' | '/account';
-  labelKey: 'workspace' | 'activity' | 'search' | 'account';
+  href: '/workspace' | '/my-achievements' | '/activity' | '/search' | '/account';
+  labelKey: 'workspace' | 'myAchievements' | 'activity' | 'search' | 'account';
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
   { key: 'workspace', href: '/workspace', labelKey: 'workspace', icon: 'home-outline' },
+  {
+    key: 'my-achievements',
+    href: '/my-achievements',
+    labelKey: 'myAchievements',
+    icon: 'documents-outline',
+  },
   { key: 'activity', href: '/activity', labelKey: 'activity', icon: 'pulse-outline' },
   { key: 'search', href: '/search', labelKey: 'search', icon: 'search-outline' },
   { key: 'account', href: '/account', labelKey: 'account', icon: 'person-circle-outline' },

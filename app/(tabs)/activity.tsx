@@ -3,30 +3,30 @@
  *  - achievement counters (total / approved / under review)
  *  - admin analytics (subordinates count) merged in
  *  - evaluation reports received from supervisors
- *  - the full achievements feed with status filtering
+ *  - follow-up notes written about the user
+ *
+ * The achievement files themselves are NOT listed here — they live in the
+ * "My achievements" tab, linked at the bottom, so the same list never appears
+ * in two places.
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import {
-  AchievementRow,
   Badge,
   Card,
-  EmptyState,
   Header,
   Screen,
-  SectionTitle,
   SignatureView,
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { listAchievements, listEvaluations, listNotesAboutMe, listSupervisions } from '@/lib/api';
-import { formatDate, statusTone } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { Achievement, Evaluation, Note } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
-type Filter = 'all' | Achievement['status'];
 type NoteWithAuthor = Note & { author: { full_name: string } | null };
 
 export default function ActivityScreen() {
@@ -37,10 +37,8 @@ export default function ActivityScreen() {
   const [notes, setNotes] = useState<NoteWithAuthor[]>([]);
   const [subordinates, setSubordinates] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<Filter>('all');
   const [evalsOpen, setEvalsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
-  const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -71,35 +69,12 @@ export default function ActivityScreen() {
     }, [load])
   );
 
-    const isPending = (a: Achievement) => a.status !== 'approved';
+  const isPending = (a: Achievement) => a.status !== 'approved';
 
   const stats = {
     total: achievements.length,
     approved: achievements.filter((a) => a.status === 'approved').length,
     pending: achievements.filter(isPending).length,
-  };
-
-  const filters: { key: Filter; label: string }[] = [
-    { key: 'all', label: t('total') },
-    { key: 'submitted', label: t('pending') },
-    { key: 'approved', label: t('approved') },
-  ];
-
-  const visible = useMemo(
-    () =>
-      filter === 'all'
-        ? achievements
-        : filter === 'approved'
-          ? achievements.filter((a) => a.status === 'approved')
-          : achievements.filter(isPending),
-    [achievements, filter]
-  );
-
-  const displayed = achievementsExpanded ? visible : visible.slice(0, 3);
-
-  const onFilterChange = (key: Filter) => {
-    setFilter(key);
-    setAchievementsExpanded(false);
   };
 
   return (
@@ -234,45 +209,24 @@ export default function ActivityScreen() {
         </>
       ) : null}
 
-      {/* Achievements feed — shows only the latest 3 until "view all" */}
-      <SectionTitle
-        title={t('myAchievements')}
-        actionLabel={visible.length > 3 ? t(achievementsExpanded ? 'showLess' : 'viewAll') : undefined}
-        onAction={() => setAchievementsExpanded((v) => !v)}
-      />
-      <View style={styles.filterRow}>
-        {filters.map((f) => {
-          const active = filter === f.key;
-          return (
-            <Pressable
-              key={f.key}
-              onPress={() => onFilterChange(f.key)}
-              style={[styles.chip, active && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {f.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {visible.length === 0 ? (
-        <EmptyState message={t('noAchievements')} hint={t('addAchievementType')} />
-      ) : (
-        <>
-          {displayed.map((item) => (
-            <AchievementRow
-              key={item.id}
-              achievement={item}
-              editable
-              onChanged={load}
-              onPress={() => router.push(`/achievement/${item.id}`)}
-            />
-          ))}
-          <Text style={styles.hint}>{t('longPressHint')}</Text>
-        </>
-      )}
+      {/* The achievement files themselves live in the "My achievements" tab —
+          this is just the way in, so the same list isn't shown twice. */}
+      <Pressable style={styles.reportCard} onPress={() => router.push('/my-achievements')}>
+        <View style={[styles.reportRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={styles.reportIcon}>
+            <Ionicons name="documents-outline" size={22} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reportTitle}>{t('myAchievements')}</Text>
+            <Text style={styles.reportHint}>{t('myAchievementsHint')}</Text>
+          </View>
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={20}
+            color={colors.mutedText}
+          />
+        </View>
+      </Pressable>
     </Screen>
   );
 }
@@ -341,7 +295,6 @@ const styles = StyleSheet.create({
   },
   reportTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
   reportHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
-  hint: { fontSize: 11, color: colors.mutedText, marginTop: spacing.xs, textAlign: 'center' },
   collapseHeader: {
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -361,18 +314,6 @@ const styles = StyleSheet.create({
   },
   signLabel: { fontSize: 12, color: colors.mutedText, marginBottom: 2 },
   evalDate: { fontSize: 11, color: colors.mutedText },
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, fontWeight: '700', color: colors.mutedText },
-  chipTextActive: { color: colors.onPrimary },
   card: { marginBottom: spacing.md },
   row: { alignItems: 'center', gap: spacing.md },
   iconBox: {

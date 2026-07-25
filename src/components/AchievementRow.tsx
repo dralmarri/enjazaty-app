@@ -63,7 +63,7 @@ export function AchievementRow({
 
   const openMove = async () => {
     setMenu(false);
-    if (profile) setFolders(await listFolders(profile.id));
+    if (profile) setFolders(await listFolders(profile.id, 'achievements'));
     setMoveOpen(true);
   };
 

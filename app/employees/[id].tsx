@@ -61,7 +61,7 @@ export default function EmployeeProfileScreen() {
       const [emp, achs, fdrs, subs, nts, canNote] = await Promise.all([
         getProfile(id),
         listAchievements(id),
-        listRootFolders(id),
+        listRootFolders(id, 'achievements'),
         listSupervisions(id).catch(() => []),
         listNotes({ targetUserId: id }).catch(() => []),
         id === profile.id ? Promise.resolve(false) : supervises(profile.id, id),

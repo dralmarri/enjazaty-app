@@ -60,7 +60,7 @@ export default function EmployeesScreen() {
       setRefreshing(true);
       const [subs, fdrs] = await Promise.all([
         listSupervisions(profile.id),
-        listFolders(profile.id),
+        listFolders(profile.id, 'employees'),
       ]);
       setItems(subs);
       setFolders(fdrs);
