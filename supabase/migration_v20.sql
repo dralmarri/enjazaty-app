@@ -40,6 +40,10 @@ update public.folders f
 
 -- A sub-folder always belongs to the same side as its parent. Repeat a few
 -- times so nesting several levels deep is covered.
+--
+-- NOTE: this pushes the parent's kind DOWN, which is wrong when only a child
+-- holds the employees — migration_v21.sql corrects that by travelling upwards
+-- first. Keep v21 in mind if you ever re-run this file.
 do $$
 begin
   for i in 1..5 loop
