@@ -166,7 +166,7 @@ export default function WorkspaceScreen() {
         <Avatar name={profile?.full_name} uri={profile?.avatar_url} size={56} />
       </View>
 
-      {/* Two primary team actions side by side */}
+      {/* Two square actions side by side (team ones for an admin) */}
       <View style={styles.actionsRow}>
         {isAdmin ? (
           <>
@@ -188,32 +188,46 @@ export default function WorkspaceScreen() {
             </Pressable>
           </>
         ) : (
-          <Pressable style={styles.actionCard} onPress={() => router.push('/members')}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="eye-outline" size={26} color={colors.primaryDark} />
-            </View>
-            <Text style={styles.actionLabel}>{t('viewMembers')}</Text>
-          </Pressable>
+          <>
+            <Pressable style={styles.actionCard} onPress={() => router.push('/members')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="eye-outline" size={26} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.actionLabel}>{t('viewMembers')}</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.actionCard}
+              onPress={() => router.push('/my-achievements')}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="documents-outline" size={26} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.actionLabel}>{t('myAchievements')}</Text>
+            </Pressable>
+          </>
         )}
       </View>
 
-      {/* Shortcut to the user's own achievements (they live in their own tab) */}
-      <Pressable style={styles.membersCard} onPress={() => router.push('/my-achievements')}>
-        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="documents-outline" size={24} color={colors.primaryDark} />
+      {/* Admins keep the wide shortcut — the employee has it as a square above. */}
+      {isAdmin ? (
+        <Pressable style={styles.membersCard} onPress={() => router.push('/my-achievements')}>
+          <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={styles.actionIcon}>
+              <Ionicons name="documents-outline" size={24} color={colors.primaryDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.membersTitle}>{t('myAchievements')}</Text>
+              <Text style={styles.membersHint}>{t('myAchievementsHint')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={colors.mutedText}
+            />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.membersTitle}>{t('myAchievements')}</Text>
-            <Text style={styles.membersHint}>{t('myAchievementsHint')}</Text>
-          </View>
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={20}
-            color={colors.mutedText}
-          />
-        </View>
-      </Pressable>
+        </Pressable>
+      ) : null}
 
       {/* Attendance — supervising staff is an admin job, so employees don't
           see this at all. */}
