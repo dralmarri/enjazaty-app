@@ -55,7 +55,7 @@ export const translations = {
     myAchievementsHint: 'ملفات إنجازاتك ومجلداتها',
     teamHint: 'موظفوك ومجلداتهم',
     loadMore: 'عرض المزيد',
-    latestEvaluation: 'آخر تقييم وصلك',
+    latestEvaluation: 'آخر تقييم مُستلَم',
     needsFixTitle: 'إنجازات بحاجة إلى تعديل',
     moveToTeam: 'نقل إلى مساحة العمل (مجلد موظفين)',
     moveToMyAchievements: 'نقل إلى إنجازاتي (مجلد إنجازات)',
