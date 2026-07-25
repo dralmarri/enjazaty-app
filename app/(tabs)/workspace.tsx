@@ -1,6 +1,8 @@
 /**
- * Workspace home — everything about the user's TEAM: greeting, manage/view
- * employees, attendance, and the employee folders.
+ * Workspace home. What it shows depends on the role:
+ *  - admin: the TEAM side — manage/view employees, attendance, employee folders
+ *  - employee: what needs their attention — achievements sent back for revision
+ *    and the newest evaluation received (attendance is an admin job)
  *
  * The user's own achievement files and folders live in the "My achievements"
  * tab; the two sides are kept apart by `folders.kind` (migration_v20.sql).
@@ -9,11 +11,22 @@ import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { Avatar, Button, Input, Screen, SectionTitle } from '@/components';
+import {
+  AchievementRow,
+  Avatar,
+  Button,
+  Card,
+  Input,
+  Screen,
+  SectionTitle,
+  SignatureView,
+} from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   deleteFolder,
+  listAchievements,
+  listEvaluations,
   listNotifications,
   listRootFolders,
   updateFolderKind,
@@ -21,13 +34,17 @@ import {
   updateFolderParent,
 } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import type { Folder } from '@/types/database';
+import type { Achievement, Evaluation, Folder } from '@/types/database';
 import { colors, radius, shadow, spacing } from '@/theme/colors';
 
 export default function WorkspaceScreen() {
   const { profile, isAdmin } = useAuth();
   const { t, language, isRTL } = useLanguage();
   const [folders, setFolders] = useState<Folder[]>([]);
+  // Employee-side home extras: the newest evaluation received and the
+  // achievements a supervisor asked to fix.
+  const [latestEval, setLatestEval] = useState<Evaluation | null>(null);
+  const [needsFix, setNeedsFix] = useState<Achievement[]>([]);
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   // Long-press folder editing.
@@ -87,12 +104,18 @@ export default function WorkspaceScreen() {
     if (!profile) return;
     try {
       setRefreshing(true);
-      const [fdrs, notifs] = await Promise.all([
+      const [fdrs, notifs, evals, achs] = await Promise.all([
         listRootFolders(profile.id, 'employees'),
         listNotifications(profile.id),
+        listEvaluations(profile.id), // evaluations about me, newest first
+        listAchievements(profile.id),
       ]);
       setFolders(fdrs);
       setUnread(notifs.filter((n) => !n.read).length);
+      setLatestEval(evals[0] ?? null);
+      setNeedsFix(
+        achs.filter((a) => a.status === 'needs_revision' || a.status === 'rejected')
+      );
     } catch {
       // keep previous data on error
     } finally {
@@ -192,24 +215,83 @@ export default function WorkspaceScreen() {
         </View>
       </Pressable>
 
-      {/* Attendance — every user can mark/view attendance for their own direct
-          subordinates (empty state shown if they have none). */}
-      <Pressable style={styles.membersCard} onPress={() => router.push('/attendance')}>
-        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="calendar-outline" size={24} color={colors.primaryDark} />
+      {/* Attendance — supervising staff is an admin job, so employees don't
+          see this at all. */}
+      {isAdmin ? (
+        <Pressable style={styles.membersCard} onPress={() => router.push('/attendance')}>
+          <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={styles.actionIcon}>
+              <Ionicons name="calendar-outline" size={24} color={colors.primaryDark} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.membersTitle}>{t('attendance')}</Text>
+              <Text style={styles.membersHint}>{t('attendanceHint')}</Text>
+            </View>
+            <Ionicons
+              name={isRTL ? 'chevron-back' : 'chevron-forward'}
+              size={20}
+              color={colors.mutedText}
+            />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.membersTitle}>{t('attendance')}</Text>
-            <Text style={styles.membersHint}>{t('attendanceHint')}</Text>
-          </View>
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={20}
-            color={colors.mutedText}
+        </Pressable>
+      ) : null}
+
+      {/* What an employee needs to see first: the achievements a supervisor
+          asked to fix, then the newest evaluation received. */}
+      {!isAdmin && needsFix.length > 0 ? (
+        <>
+          <SectionTitle
+            title={t('needsFixTitle')}
+            actionLabel={needsFix.length > 3 ? t('viewAll') : undefined}
+            onAction={() => router.push('/my-achievements')}
           />
-        </View>
-      </Pressable>
+          {needsFix.slice(0, 3).map((item) => (
+            <AchievementRow
+              key={item.id}
+              achievement={item}
+              editable
+              onChanged={load}
+              onPress={() => router.push(`/achievement/${item.id}`)}
+            />
+          ))}
+        </>
+      ) : null}
+
+      {!isAdmin && latestEval ? (
+        <>
+          <SectionTitle
+            title={t('latestEvaluation')}
+            actionLabel={t('viewAll')}
+            onAction={() => router.push('/activity')}
+          />
+          <Card style={styles.evalCard}>
+            <View style={[styles.evalTop, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Ionicons
+                    key={n}
+                    name={n <= latestEval.rating ? 'star' : 'star-outline'}
+                    size={16}
+                    color={colors.primary}
+                  />
+                ))}
+              </View>
+              <Text style={styles.evalDate}>{formatDate(latestEval.created_at, language)}</Text>
+            </View>
+            {latestEval.comment ? (
+              <Text style={styles.evalComment} numberOfLines={3}>
+                {latestEval.comment}
+              </Text>
+            ) : null}
+            {latestEval.signature ? (
+              <View style={styles.signBox}>
+                <Text style={styles.signLabel}>{t('eSignature')}</Text>
+                <SignatureView value={latestEval.signature} height={70} />
+              </View>
+            ) : null}
+          </Card>
+        </>
+      ) : null}
 
       {/* View members (admins only — non-admins already have this in the action row above) */}
       {isAdmin ? (
@@ -481,6 +563,18 @@ const styles = StyleSheet.create({
   membersRow: { alignItems: 'center', gap: spacing.md },
   membersTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
   membersHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
+  evalCard: { marginBottom: spacing.md, gap: spacing.sm },
+  evalTop: { alignItems: 'center', justifyContent: 'space-between' },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  evalComment: { fontSize: 14, color: colors.textDark },
+  evalDate: { fontSize: 11, color: colors.mutedText },
+  signBox: {
+    backgroundColor: colors.softBackground,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    alignItems: 'center',
+  },
+  signLabel: { fontSize: 12, color: colors.mutedText, marginBottom: 2 },
   folderGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   folderCard: {
     width: '47%',
