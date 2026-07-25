@@ -257,6 +257,7 @@ export const translations = {
 
     // Search
     searchHint: 'ابحث في الإنجازات والموظفين',
+    searchHintOwn: 'ابحث في إنجازاتك',
     noResults: 'لا توجد نتائج',
 
     // Folders
@@ -609,6 +610,7 @@ export const translations = {
     copy: 'Copy',
 
     searchHint: 'Search achievements and employees',
+    searchHintOwn: 'Search your achievements',
     noResults: 'No results',
 
     folders: 'Folders',

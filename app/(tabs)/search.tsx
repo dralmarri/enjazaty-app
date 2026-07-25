@@ -1,7 +1,9 @@
 /**
- * Search tab — search your achievements by title/description, search the
- * employees you supervise by name (or User ID / job title), and look up any
- * user by their exact User ID.
+ * Search tab — search your achievements by title/description.
+ *
+ * For an admin it also searches the employees he supervises (by name, User ID
+ * or job title) and resolves any exact User ID. An employee supervises nobody,
+ * so his search covers his own achievements only.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -23,8 +25,10 @@ import type { Achievement, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function SearchScreen() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { t, language, isRTL } = useLanguage();
+  // An employee has no one to look up, so the hint only mentions achievements.
+  const hint = isAdmin ? t('searchHint') : t('searchHintOwn');
   const [query, setQuery] = useState('');
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [team, setTeam] = useState<UserProfile[]>([]);
@@ -35,14 +39,14 @@ export default function SearchScreen() {
     try {
       const [mine, supervised] = await Promise.all([
         listAchievements(profile.id),
-        listSupervisedUsers(profile.id),
+        isAdmin ? listSupervisedUsers(profile.id) : Promise.resolve([]),
       ]);
       setAchievements(mine);
       setTeam(supervised);
     } catch {
       // ignore
     }
-  }, [profile]);
+  }, [profile, isAdmin]);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,16 +78,16 @@ export default function SearchScreen() {
     );
   }, [query, team]);
 
-  // If the query looks like a User ID, try to resolve it.
+  // If the query looks like a User ID, try to resolve it (admins only).
   const onLookupUser = useCallback(async () => {
     const q = query.trim();
-    if (!q) {
+    if (!q || !isAdmin) {
       setFoundUser(null);
       return;
     }
     const user = await getProfileByCode(q);
     setFoundUser(user);
-  }, [query]);
+  }, [query, isAdmin]);
 
   return (
     <Screen>
@@ -92,7 +96,7 @@ export default function SearchScreen() {
       <Input
         value={query}
         onChangeText={setQuery}
-        placeholder={t('searchHint')}
+        placeholder={hint}
         autoCapitalize="none"
         onSubmitEditing={onLookupUser}
         returnKeyType="search"
@@ -154,7 +158,7 @@ export default function SearchScreen() {
 
       {/* Achievement results */}
       {query.trim().length === 0 ? (
-        <EmptyState icon="search-outline" message={t('searchHint')} />
+        <EmptyState icon="search-outline" message={hint} />
       ) : results.length === 0 && teamResults.length === 0 && !foundUser ? (
         <EmptyState icon="search-outline" message={t('noResults')} />
       ) : (
