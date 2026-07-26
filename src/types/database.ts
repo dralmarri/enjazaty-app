@@ -165,9 +165,13 @@ export interface AppNotification {
  * people below him. It carries no task and no due date: recipients only read
  * it, and the reading is recorded automatically (see migration_v22.sql).
  */
+/** What kind of official document this is (see migration_v23.sql). */
+export type CircularKind = 'circular' | 'letter' | 'announcement';
+
 export interface Circular {
   id: string;
   sender_id: string;
+  kind: CircularKind;
   /** Official number of the circular, when it has one. */
   number: string | null;
   title: string;

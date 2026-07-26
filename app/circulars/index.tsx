@@ -14,16 +14,18 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { listReceivedCirculars, listSentCirculars } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import type { Circular, CircularRecipient } from '@/types/database';
+import type { Circular, CircularKind, CircularRecipient } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 type Tab = 'received' | 'sent';
+type KindFilter = 'all' | CircularKind;
 
 export default function CircularsScreen() {
   const { profile, isAdmin } = useAuth();
   const { t, language, isRTL } = useLanguage();
 
   const [tab, setTab] = useState<Tab>('received');
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
   const [received, setReceived] = useState<(CircularRecipient & { circular: Circular })[]>([]);
   const [sent, setSent] = useState<Circular[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,6 +53,9 @@ export default function CircularsScreen() {
     }, [load])
   );
 
+  const kindLabel = (k: CircularKind) =>
+    k === 'letter' ? t('kindLetter') : k === 'announcement' ? t('kindAnnouncement') : t('kindCircular');
+
   const row = (c: Circular, unread: boolean) => (
     <Card
       key={c.id}
@@ -70,8 +75,8 @@ export default function CircularsScreen() {
             {c.title}
           </Text>
           <Text style={styles.meta}>
-            {c.number ? `${c.number} · ` : ''}
-            {formatDate(c.created_at, language)}
+            {kindLabel(c.kind)}
+            {c.number ? ` · ${c.number}` : ''} · {formatDate(c.created_at, language)}
           </Text>
         </View>
         {unread ? <Badge label={t('unreadCirculars')} tone="primary" /> : null}
@@ -84,10 +89,12 @@ export default function CircularsScreen() {
     </Card>
   );
 
+  const keep = (c: Circular) => kindFilter === 'all' || c.kind === kindFilter;
+
   const items =
     tab === 'received'
-      ? received.map((r) => row(r.circular, !r.read_at))
-      : sent.map((c) => row(c, false));
+      ? received.filter((r) => keep(r.circular)).map((r) => row(r.circular, !r.read_at))
+      : sent.filter(keep).map((c) => row(c, false));
 
   return (
     <Screen refreshing={refreshing} onRefresh={load}>
@@ -118,6 +125,24 @@ export default function CircularsScreen() {
         </View>
       ) : null}
 
+      {/* Filter the archive by kind — it grows long over the years */}
+      <View style={styles.tabsRow}>
+        {(['all', 'circular', 'letter', 'announcement'] as KindFilter[]).map((k) => {
+          const active = kindFilter === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => setKindFilter(k)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {k === 'all' ? t('all') : kindLabel(k)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {items.length === 0 ? (
         <EmptyState icon="megaphone-outline" message={t('noCirculars')} />
       ) : (
@@ -142,7 +167,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: '700', color: colors.textDark },
   titleUnread: { fontWeight: '900' },
   meta: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
-  tabsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  tabsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
   chip: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,

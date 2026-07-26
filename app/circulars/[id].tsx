@@ -91,7 +91,12 @@ export default function CircularScreen() {
           {circular.pinned ? <Badge label={t('pinned')} tone="primary" /> : null}
         </View>
         <Text style={styles.meta}>
-          {circular.number ? `${circular.number} · ` : ''}
+          {circular.kind === 'letter'
+            ? t('kindLetter')
+            : circular.kind === 'announcement'
+            ? t('kindAnnouncement')
+            : t('kindCircular')}
+          {circular.number ? ` · ${circular.number}` : ''} ·{' '}
           {formatDate(circular.created_at, language)}
         </Text>
         {sender ? (

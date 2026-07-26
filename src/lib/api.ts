@@ -9,6 +9,7 @@ import type {
   AchievementStatus,
   AppNotification,
   Circular,
+  CircularKind,
   CircularRecipient,
   Attachment,
   AttachmentType,
@@ -775,6 +776,7 @@ export async function listNotifications(
  */
 export async function sendCircular(input: {
   sender_id: string;
+  kind: CircularKind;
   title: string;
   number?: string | null;
   body?: string | null;

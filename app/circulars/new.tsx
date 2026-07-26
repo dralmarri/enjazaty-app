@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { getCircular, listSupervisedUsers, sendCircular } from '@/lib/api';
 import { UploadSizeError, uploadFile } from '@/lib/storage';
-import type { UserProfile } from '@/types/database';
+import type { CircularKind, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 type Mode = 'all' | 'select';
@@ -25,6 +25,7 @@ export default function NewCircularScreen() {
   const { t, isRTL } = useLanguage();
   const { source } = useLocalSearchParams<{ source?: string }>();
 
+  const [kind, setKind] = useState<CircularKind>('circular');
   const [title, setTitle] = useState('');
   const [number, setNumber] = useState('');
   const [body, setBody] = useState('');
@@ -48,6 +49,7 @@ export default function NewCircularScreen() {
     if (source) {
       const original = await getCircular(source);
       if (original) {
+        setKind(original.kind);
         setTitle(original.title);
         setNumber(original.number ?? '');
         setBody(original.body ?? '');
@@ -97,6 +99,7 @@ export default function NewCircularScreen() {
 
       await sendCircular({
         sender_id: profile.id,
+        kind,
         title: title.trim(),
         number: number.trim() || null,
         body: body.trim() || null,
@@ -117,6 +120,25 @@ export default function NewCircularScreen() {
   return (
     <Screen>
       <Header title={source ? t('rebroadcast') : t('newCircular')} showBack />
+
+      {/* What kind of document this is — a label for the archive, nothing more */}
+      <SectionTitle title={t('documentKind')} />
+      <View style={styles.tabsRow}>
+        {(['circular', 'letter', 'announcement'] as CircularKind[]).map((k) => {
+          const active = kind === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => setKind(k)}
+              style={[styles.chip, active && styles.chipActive]}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {t(k === 'circular' ? 'kindCircular' : k === 'letter' ? 'kindLetter' : 'kindAnnouncement')}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <Input label={t('circularTitle')} value={title} onChangeText={setTitle} />
       <Input label={t('circularNumber')} value={number} onChangeText={setNumber} />
