@@ -24,6 +24,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
+  countUnreadCirculars,
   deleteFolder,
   listAchievements,
   listEvaluations,
@@ -46,6 +47,7 @@ export default function WorkspaceScreen() {
   const [latestEval, setLatestEval] = useState<Evaluation | null>(null);
   const [needsFix, setNeedsFix] = useState<Achievement[]>([]);
   const [unread, setUnread] = useState(0);
+  const [unreadCirculars, setUnreadCirculars] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   // Long-press folder editing.
   const [folderMenu, setFolderMenu] = useState<Folder | null>(null);
@@ -104,12 +106,14 @@ export default function WorkspaceScreen() {
     if (!profile) return;
     try {
       setRefreshing(true);
-      const [fdrs, notifs, evals, achs] = await Promise.all([
+      const [fdrs, notifs, evals, achs, circulars] = await Promise.all([
         listRootFolders(profile.id, 'employees'),
         listNotifications(profile.id),
         listEvaluations(profile.id), // evaluations about me, newest first
         listAchievements(profile.id),
+        countUnreadCirculars(profile.id),
       ]);
+      setUnreadCirculars(circulars);
       setFolders(fdrs);
       setUnread(notifs.filter((n) => !n.read).length);
       setLatestEval(evals[0] ?? null);
@@ -228,6 +232,30 @@ export default function WorkspaceScreen() {
           </View>
         </Pressable>
       ) : null}
+
+      {/* Circulars — an archive of what was sent to this user. Everyone has it;
+          only supervisors can write one (handled inside the screen). */}
+      <Pressable style={styles.membersCard} onPress={() => router.push('/circulars')}>
+        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={styles.actionIcon}>
+            <Ionicons name="megaphone-outline" size={24} color={colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.membersTitle}>{t('circulars')}</Text>
+            <Text style={styles.membersHint}>{t('circularsHint')}</Text>
+          </View>
+          {unreadCirculars > 0 ? (
+            <View style={styles.countPill}>
+              <Text style={styles.countText}>{unreadCirculars}</Text>
+            </View>
+          ) : null}
+          <Ionicons
+            name={isRTL ? 'chevron-back' : 'chevron-forward'}
+            size={20}
+            color={colors.mutedText}
+          />
+        </View>
+      </Pressable>
 
       {/* Attendance — supervising staff is an admin job, so employees don't
           see this at all. */}
@@ -575,6 +603,16 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   membersRow: { alignItems: 'center', gap: spacing.md },
+  countPill: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
   membersTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
   membersHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
   evalCard: { marginBottom: spacing.md, gap: spacing.sm },

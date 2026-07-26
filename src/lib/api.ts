@@ -8,6 +8,8 @@ import type {
   Achievement,
   AchievementStatus,
   AppNotification,
+  Circular,
+  CircularRecipient,
   Attachment,
   AttachmentType,
   AttendanceException,
@@ -360,6 +362,27 @@ export async function deleteAchievement(id: string): Promise<void> {
 }
 
 /* ------------------------------- Attachments ----------------------------- */
+
+/**
+ * Attachment types for every achievement of one owner, keyed by achievement id.
+ * Used by the report to show what each achievement is made of (image / video /
+ * document) without fetching the attachments of each one separately.
+ */
+export async function listAttachmentTypesByOwner(
+  ownerId: string
+): Promise<Record<string, AttachmentType[]>> {
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('achievement_id, type')
+    .eq('owner_id', ownerId);
+  if (error) throw error;
+  const map: Record<string, AttachmentType[]> = {};
+  for (const row of (data ?? []) as { achievement_id: string; type: AttachmentType }[]) {
+    const list = map[row.achievement_id] ?? (map[row.achievement_id] = []);
+    if (!list.includes(row.type)) list.push(row.type);
+  }
+  return map;
+}
 
 export async function listAttachments(
   achievementId: string
@@ -742,6 +765,142 @@ export async function listNotifications(
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as AppNotification[];
+}
+
+/* -------------------------------- Circulars ------------------------------- */
+
+/**
+ * Send a circular: stored once, then linked to every recipient, each of whom
+ * also gets a notification. Recipients only read it — nothing to submit back.
+ */
+export async function sendCircular(input: {
+  sender_id: string;
+  title: string;
+  number?: string | null;
+  body?: string | null;
+  file_url?: string | null;
+  file_name?: string | null;
+  source_id?: string | null;
+  recipient_ids: string[];
+  /** Notification body shown in the bell. */
+  notification_title: string;
+}): Promise<Circular> {
+  const { recipient_ids, notification_title, ...circular } = input;
+
+  const { data, error } = await supabase
+    .from('circulars')
+    .insert(circular)
+    .select()
+    .single();
+  if (error) throw error;
+  const created = data as Circular;
+
+  if (recipient_ids.length > 0) {
+    const { error: recipientsError } = await supabase.from('circular_recipients').insert(
+      recipient_ids.map((recipient_id) => ({ circular_id: created.id, recipient_id }))
+    );
+    if (recipientsError) throw recipientsError;
+
+    const { error: notifyError } = await supabase.from('notifications').insert(
+      recipient_ids.map((user_id) => ({
+        user_id,
+        title: notification_title,
+        body: created.title,
+        type: 'circular' as const,
+        related_id: created.id,
+      }))
+    );
+    if (notifyError) throw notifyError;
+  }
+
+  return created;
+}
+
+/** Circulars addressed to this user, pinned ones first, then newest. */
+export async function listReceivedCirculars(
+  recipientId: string
+): Promise<(CircularRecipient & { circular: Circular })[]> {
+  const { data, error } = await supabase
+    .from('circular_recipients')
+    .select('*, circular:circular_id (*)')
+    .eq('recipient_id', recipientId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  const rows = (data ?? []) as (CircularRecipient & { circular: Circular })[];
+  return rows
+    .filter((r) => !!r.circular)
+    .sort((a, b) => {
+      if (a.circular.pinned !== b.circular.pinned) return a.circular.pinned ? -1 : 1;
+      return b.circular.created_at.localeCompare(a.circular.created_at);
+    });
+}
+
+/** Circulars this user sent, newest first. */
+export async function listSentCirculars(senderId: string): Promise<Circular[]> {
+  const { data, error } = await supabase
+    .from('circulars')
+    .select('*')
+    .eq('sender_id', senderId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Circular[];
+}
+
+export async function getCircular(id: string): Promise<Circular | null> {
+  const { data, error } = await supabase
+    .from('circulars')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) return null;
+  return (data as Circular) ?? null;
+}
+
+/** How many circulars this user has not opened yet. */
+export async function countUnreadCirculars(recipientId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('circular_recipients')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', recipientId)
+    .is('read_at', null);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/** Recorded automatically the first time the recipient opens the circular. */
+export async function markCircularRead(
+  circularId: string,
+  recipientId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('circular_recipients')
+    .update({ read_at: new Date().toISOString() })
+    .eq('circular_id', circularId)
+    .eq('recipient_id', recipientId)
+    .is('read_at', null);
+  if (error) throw error;
+}
+
+/** Who a circular went to and who has opened it — for the sender's view. */
+export async function listCircularRecipients(
+  circularId: string
+): Promise<(CircularRecipient & { recipient: UserProfile })[]> {
+  const { data, error } = await supabase
+    .from('circular_recipients')
+    .select('*, recipient:recipient_id (*)')
+    .eq('circular_id', circularId);
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
+export async function setCircularPinned(id: string, pinned: boolean): Promise<void> {
+  const { error } = await supabase.from('circulars').update({ pinned }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteCircular(id: string): Promise<void> {
+  const { error } = await supabase.from('circulars').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function createNotification(input: {

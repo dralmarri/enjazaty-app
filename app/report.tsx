@@ -12,9 +12,9 @@ import * as Sharing from 'expo-sharing';
 import { Button, Card, Header, Loading, Screen, Select } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { listAchievements, listEvaluations } from '@/lib/api';
+import { listAchievements, listAttachmentTypesByOwner, listEvaluations } from '@/lib/api';
 import { formatDate, monthName } from '@/lib/format';
-import type { Achievement, Evaluation } from '@/types/database';
+import type { Achievement, AttachmentType, Evaluation } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 type PeriodMode = 'all' | 'month' | 'custom';
@@ -32,6 +32,8 @@ export default function ReportScreen() {
   const { t, language, isRTL } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  // achievement id → the kinds of files attached to it (image / video / …).
+  const [types, setTypes] = useState<Record<string, AttachmentType[]>>({});
   const [loading, setLoading] = useState(true);
   const [printing, setPrinting] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -53,10 +55,12 @@ export default function ReportScreen() {
     if (!profile) return;
     setLoading(true);
     try {
-      const [achs, evals] = await Promise.all([
+      const [achs, evals, attTypes] = await Promise.all([
         listAchievements(profile.id),
         listEvaluations(profile.id),
+        listAttachmentTypesByOwner(profile.id),
       ]);
+      setTypes(attTypes);
       setAchievements(achs);
       setEvaluations(evals);
     } finally {
@@ -127,6 +131,8 @@ export default function ReportScreen() {
         <tr>
           <td>${i + 1}</td>
           <td>${escapeHtml(a.title)}</td>
+          <td>${escapeHtml(typeLabel(a.id))}</td>
+          <td class="desc">${escapeHtml(a.description ?? '—')}</td>
           <td>${escapeHtml(statusLabel(a.status))}</td>
           <td>${formatDate(a.created_at, language)}</td>
         </tr>`
@@ -152,6 +158,7 @@ export default function ReportScreen() {
       table { width:100%; border-collapse:collapse; margin-top:12px; }
       th, td { border:1px solid #F3E2B3; padding:10px; text-align:${isRTL ? 'right' : 'left'}; font-size:13px; }
       th { background:#FFF8E6; color:#1F2937; }
+      td.desc { color:#374151; max-width:280px; }
       .summary { margin-top:24px; background:#FFF8E6; border-radius:12px; padding:16px; }
     </style>
     <div class="report">
@@ -174,7 +181,7 @@ export default function ReportScreen() {
       <h3>${t('myAchievements')} (${filteredAchievements.length})</h3>
       ${
         filteredAchievements.length
-          ? `<table><thead><tr><th>#</th><th>${t('achievementTitle')}</th><th>${t('status')}</th><th>${t('reportDate')}</th></tr></thead><tbody>${rows}</tbody></table>`
+          ? `<table><thead><tr><th>#</th><th>${t('achievementTitle')}</th><th>${t('typeColumn')}</th><th>${t('descriptionColumn')}</th><th>${t('status')}</th><th>${t('reportDate')}</th></tr></thead><tbody>${rows}</tbody></table>`
           : `<p>${t('noData')}</p>`
       }
       <div class="summary">
@@ -189,6 +196,23 @@ export default function ReportScreen() {
   // Full HTML document (used for native printing).
   const buildHtml = () =>
     `<!DOCTYPE html><html dir="${isRTL ? 'rtl' : 'ltr'}" lang="${isRTL ? 'ar' : 'en'}"><head><meta charset="utf-8" /></head><body>${buildBody()}</body></html>`;
+
+  /** What the achievement is made of, e.g. "صورة، مستند". */
+  const typeLabel = (achievementId: string) => {
+    const kinds = types[achievementId] ?? [];
+    if (kinds.length === 0) return '—';
+    const label = (k: AttachmentType) =>
+      k === 'image'
+        ? t('typeImage')
+        : k === 'video'
+        ? t('typeVideo')
+        : k === 'audio'
+        ? t('typeAudio')
+        : k === 'link'
+        ? t('typeLink')
+        : t('typeDocument');
+    return kinds.map(label).join('، ');
+  };
 
   const statusLabel = (s: Achievement['status']) =>
     s === 'approved'

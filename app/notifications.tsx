@@ -64,7 +64,11 @@ export default function NotificationsScreen() {
       }
     }
     if (n.related_id) {
-      router.push(`/achievement/${n.related_id}`);
+      // A circular notification points at a circular, everything else at an
+      // achievement.
+      router.push(
+        n.type === 'circular' ? `/circulars/${n.related_id}` : `/achievement/${n.related_id}`
+      );
     }
   };
 

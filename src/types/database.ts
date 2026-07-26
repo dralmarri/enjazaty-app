@@ -145,7 +145,8 @@ export type NotificationType =
   | 'evaluation'
   | 'note'
   | 'system'
-  | 'assignment';
+  | 'assignment'
+  | 'circular';
 
 /** notifications — per-user notifications feed. */
 export interface AppNotification {
@@ -156,6 +157,36 @@ export interface AppNotification {
   type: NotificationType;
   read: boolean;
   related_id: string | null; // related entity (achievement, etc.)
+  created_at: string;
+}
+
+/**
+ * circulars — a circular (تعميم) written once by a supervisor and sent to the
+ * people below him. It carries no task and no due date: recipients only read
+ * it, and the reading is recorded automatically (see migration_v22.sql).
+ */
+export interface Circular {
+  id: string;
+  sender_id: string;
+  /** Official number of the circular, when it has one. */
+  number: string | null;
+  title: string;
+  body: string | null;
+  /** The original circular file (PDF/image), when attached. */
+  file_url: string | null;
+  file_name: string | null;
+  pinned: boolean;
+  /** Set when a sub-admin re-broadcasts a circular he received. */
+  source_id: string | null;
+  created_at: string;
+}
+
+/** circular_recipients — who a circular went to, and when each opened it. */
+export interface CircularRecipient {
+  id: string;
+  circular_id: string;
+  recipient_id: string;
+  read_at: string | null;
   created_at: string;
 }
 
@@ -203,6 +234,8 @@ export interface Database {
       notes: { Row: Note };
       evaluations: { Row: Evaluation };
       notifications: { Row: AppNotification };
+      circulars: { Row: Circular };
+      circular_recipients: { Row: CircularRecipient };
       attendance_exceptions: { Row: AttendanceException };
     };
   };
