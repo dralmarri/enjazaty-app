@@ -799,7 +799,11 @@ export async function sendCircular(input: {
 
   if (recipient_ids.length > 0) {
     const { error: recipientsError } = await supabase.from('circular_recipients').insert(
-      recipient_ids.map((recipient_id) => ({ circular_id: created.id, recipient_id }))
+      recipient_ids.map((recipient_id) => ({
+        circular_id: created.id,
+        recipient_id,
+        sender_id: created.sender_id,
+      }))
     );
     if (recipientsError) throw recipientsError;
 

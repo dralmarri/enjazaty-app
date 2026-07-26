@@ -190,6 +190,8 @@ export interface CircularRecipient {
   id: string;
   circular_id: string;
   recipient_id: string;
+  /** Denormalized sender — keeps the row's security rules off `circulars`. */
+  sender_id: string;
   read_at: string | null;
   created_at: string;
 }

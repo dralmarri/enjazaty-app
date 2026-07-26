@@ -20,6 +20,18 @@ import { colors, radius, spacing } from '@/theme/colors';
 
 type Mode = 'all' | 'select';
 
+/**
+ * On web the picker sometimes hands back the blob id instead of a file name,
+ * which then shows as a long meaningless string. Fall back to a readable name
+ * built from the file's type in that case.
+ */
+const BLOB_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+function readableName(name: string | undefined, mimeType: string | undefined, fallback: string) {
+  if (name && name.includes('.') && !BLOB_ID.test(name)) return name;
+  const ext = mimeType?.split('/')[1]?.split('+')[0];
+  return ext ? `${fallback}.${ext}` : fallback;
+}
+
 export default function NewCircularScreen() {
   const { profile } = useAuth();
   const { t, isRTL } = useLanguage();
@@ -65,7 +77,11 @@ export default function NewCircularScreen() {
     const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
     if (!res.canceled && res.assets[0]) {
       const asset = res.assets[0];
-      setFile({ uri: asset.uri, name: asset.name, mimeType: asset.mimeType });
+      setFile({
+        uri: asset.uri,
+        name: readableName(asset.name, asset.mimeType, t('circularFile')),
+        mimeType: asset.mimeType,
+      });
     }
   };
 
