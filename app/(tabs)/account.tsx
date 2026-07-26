@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
-import { Avatar, Badge, Button, Card, Header, Screen, SectionTitle } from '@/components';
+import { Avatar, Badge, Button, Card, Header, Input, Screen, SectionTitle } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { updateProfile } from '@/lib/api';
@@ -30,6 +30,8 @@ export default function AccountScreen() {
   const [uploading, setUploading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteAck, setDeleteAck] = useState(false);
+  const [deleteText, setDeleteText] = useState('');
 
   // Show major.minor only, e.g. "1.0".
   const appVersion = (Constants.expoConfig?.version ?? '1.0.0')
@@ -37,11 +39,23 @@ export default function AccountScreen() {
     .slice(0, 2)
     .join('.');
 
+  // Requires both the acknowledgement checkbox and typing the confirm word,
+  // so deleting the account is always a deliberate, informed step.
+  const canDelete =
+    deleteAck && deleteText.trim().toLowerCase() === t('deleteConfirmWord').toLowerCase();
+
+  const closeDeleteModal = () => {
+    setConfirmDelete(false);
+    setDeleteAck(false);
+    setDeleteText('');
+  };
+
   const onDeleteAccount = async () => {
+    if (!canDelete) return;
     setDeleting(true);
     try {
       await deleteAccount();
-      setConfirmDelete(false);
+      closeDeleteModal();
       router.replace('/language');
     } catch {
       setDeleting(false);
@@ -250,31 +264,62 @@ export default function AccountScreen() {
       <Text style={styles.credit}>{t('developedBy')}</Text>
       <Text style={styles.creditEn}>Developed by Hanadi Almarri</Text>
 
-      {/* Delete confirmation */}
+      {/* Delete confirmation — deliberately a few deliberate steps: read what
+          gets deleted, tick the acknowledgement, then type the confirm word. */}
       <Modal
         visible={confirmDelete}
         transparent
         animationType="fade"
-        onRequestClose={() => setConfirmDelete(false)}
+        onRequestClose={closeDeleteModal}
       >
-        <Pressable style={styles.backdrop} onPress={() => setConfirmDelete(false)}>
+        <Pressable style={styles.backdrop} onPress={closeDeleteModal}>
           <Pressable style={styles.confirmSheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.warnCircle}>
               <Ionicons name="warning-outline" size={32} color={colors.primaryDark} />
             </View>
             <Text style={styles.confirmTitle}>{t('deleteAccount')}</Text>
             <Text style={styles.confirmBody}>{t('deleteAccountConfirm')}</Text>
+
+            <View style={styles.deleteItemsBox}>
+              <Text style={styles.deleteItemsTitle}>{t('deleteAccountItemsTitle')}</Text>
+              <Text style={styles.deleteItemsText}>{t('deleteAccountItems')}</Text>
+            </View>
+
+            <Pressable
+              onPress={() => setDeleteAck((v) => !v)}
+              style={[styles.ackRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={deleteAck ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={deleteAck ? colors.primary : colors.mutedText}
+              />
+              <Text style={styles.ackText}>{t('deleteAccountAck')}</Text>
+            </Pressable>
+
+            <Input
+              label={t('deleteConfirmLabel')}
+              value={deleteText}
+              onChangeText={setDeleteText}
+              placeholder={t('deleteConfirmWord')}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
             <Button
               title={deleting ? t('loading') : t('deleteAccount')}
               variant="primary"
               icon="trash-outline"
               onPress={onDeleteAccount}
               loading={deleting}
+              disabled={!canDelete}
+              style={{ marginTop: spacing.sm }}
             />
             <Button
               title={t('cancel')}
               variant="outline"
-              onPress={() => setConfirmDelete(false)}
+              onPress={closeDeleteModal}
               style={{ marginTop: spacing.sm }}
             />
           </Pressable>
@@ -429,8 +474,33 @@ const styles = StyleSheet.create({
     color: colors.mutedText,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
+  deleteItemsBox: {
+    width: '100%',
+    backgroundColor: colors.softBackground,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  deleteItemsTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.textDark,
+    marginBottom: spacing.xs,
+  },
+  deleteItemsText: {
+    fontSize: 13,
+    color: colors.mutedText,
+    lineHeight: 21,
+  },
+  ackRow: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  ackText: { flex: 1, fontSize: 13, color: colors.textDark, fontWeight: '600' },
   credit: {
     textAlign: 'center',
     marginTop: spacing.xl,

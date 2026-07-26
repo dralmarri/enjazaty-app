@@ -24,6 +24,7 @@ export const translations = {
     fullName: 'الاسم الكامل',
     confirmPassword: 'تأكيد كلمة المرور',
     forgotPassword: 'نسيت كلمة المرور؟',
+    rememberMe: 'تذكرني',
     noAccount: 'ليس لديك حساب؟',
     haveAccount: 'لديك حساب بالفعل؟',
     userType: 'نوع المستخدم',
@@ -349,6 +350,12 @@ export const translations = {
     deleteAccount: 'حذف الحساب',
     deleteAccountConfirm:
       'هل أنت متأكد من حذف حسابك؟ سيتم حذف جميع بياناتك نهائياً ولا يمكن التراجع.',
+    deleteAccountItemsTitle: 'سيُحذف نهائياً كل ما يلي:',
+    deleteAccountItems:
+      '• جميع إنجازاتك ومرفقاتها\n• التقييمات التي استلمتها\n• التعاميم والكتب الرسمية المرسلة والمستلمة\n• سجلات الحضور والغياب\n• توقيعاتك المحفوظة\n• بيانات ملفك الشخصي وحساب الدخول',
+    deleteAccountAck: 'أدرك أن هذا الإجراء نهائي ولا يمكن التراجع عنه',
+    deleteConfirmWord: 'حذف',
+    deleteConfirmLabel: 'اكتب كلمة "حذف" للتأكيد',
 
     // Reports
     reports: 'التقارير',
@@ -433,6 +440,7 @@ export const translations = {
     fullName: 'Full name',
     confirmPassword: 'Confirm password',
     forgotPassword: 'Forgot password?',
+    rememberMe: 'Remember me',
     noAccount: "Don't have an account?",
     haveAccount: 'Already have an account?',
     userType: 'User type',
@@ -734,6 +742,12 @@ export const translations = {
     deleteAccount: 'Delete account',
     deleteAccountConfirm:
       'Are you sure you want to delete your account? All your data will be permanently deleted and cannot be recovered.',
+    deleteAccountItemsTitle: 'The following will be permanently deleted:',
+    deleteAccountItems:
+      '• All your achievements and their attachments\n• Evaluations you received\n• Circulars & official letters sent and received\n• Attendance records\n• Your saved signatures\n• Your profile and login data',
+    deleteAccountAck: 'I understand this action is permanent and cannot be undone',
+    deleteConfirmWord: 'DELETE',
+    deleteConfirmLabel: 'Type "DELETE" to confirm',
 
     reports: 'Reports',
     myReport: 'My achievements report',

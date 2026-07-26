@@ -4,12 +4,13 @@
  * On submit we sign up and move to the OTP verification screen.
  */
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { Button, Header, Input, Screen } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { setRememberMe } from '@/lib/supabase';
 import type { UserRole } from '@/types/database';
 import { colors, spacing } from '@/theme/colors';
 
@@ -22,6 +23,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,6 +43,8 @@ export default function SignupScreen() {
     }
     setLoading(true);
     try {
+      // Set BEFORE signing up, so the session is written to the right place.
+      setRememberMe(remember);
       const { needsVerification } = await signUp(email, password, role);
       if (needsVerification) {
         // Go verify the email via the OTP code.
@@ -104,6 +108,22 @@ export default function SignupScreen() {
         placeholder="••••••••"
       />
 
+      {/* Remember me — web only (a native app is expected to stay signed in). */}
+      {Platform.OS === 'web' ? (
+        <Pressable
+          onPress={() => setRemember((v) => !v)}
+          style={[styles.rememberRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          hitSlop={8}
+        >
+          <Ionicons
+            name={remember ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={remember ? colors.primary : colors.mutedText}
+          />
+          <Text style={styles.rememberText}>{t('rememberMe')}</Text>
+        </Pressable>
+      ) : null}
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <Button
@@ -135,6 +155,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  rememberRow: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  rememberText: { fontSize: 14, color: colors.textDark, fontWeight: '600' },
   error: {
     color: colors.danger,
     marginBottom: spacing.md,
