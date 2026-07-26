@@ -1,9 +1,12 @@
 /**
  * Compose a circular: write it once, attach the original file if there is one,
- * and send it to everyone below you in the chain or to selected people.
+ * and send it to the people reporting DIRECTLY to you — all of them or a
+ * selection.
  *
- * `?source=<id>` re-broadcasts a circular the user received, keeping a link to
- * the original one.
+ * It deliberately stops at one level: a top supervisor would otherwise face a
+ * list of hundreds, and not every circular is meant for everyone. Whoever
+ * receives it and supervises others passes it on with `?source=<id>`, which
+ * re-broadcasts it to his own direct subordinates.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -13,7 +16,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Avatar, Button, Card, Header, Input, Screen, SectionTitle } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getCircular, listSupervisedUsers, sendCircular } from '@/lib/api';
+import { getCircular, listDirectSubordinates, sendCircular } from '@/lib/api';
 import { UploadSizeError, uploadFile } from '@/lib/storage';
 import type { CircularKind, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
@@ -53,7 +56,7 @@ export default function NewCircularScreen() {
   const load = useCallback(async () => {
     if (!profile) return;
     try {
-      setTeam(await listSupervisedUsers(profile.id));
+      setTeam(await listDirectSubordinates(profile.id));
     } catch {
       // ignore
     }

@@ -651,6 +651,14 @@ export async function listSupervisions(
   return (data ?? []) as any;
 }
 
+/** The people reporting DIRECTLY to this supervisor (one level only). */
+export async function listDirectSubordinates(
+  supervisorId: string
+): Promise<UserProfile[]> {
+  const rows = await listSupervisions(supervisorId);
+  return rows.map((r) => r.subordinate).filter(Boolean);
+}
+
 /**
  * Every user below `supervisorId` in the supervision chain — direct
  * subordinates plus everyone under the sub-admins below him (any depth).
