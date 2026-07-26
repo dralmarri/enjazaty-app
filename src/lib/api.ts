@@ -281,6 +281,34 @@ export async function listAchievements(ownerId: string): Promise<Achievement[]> 
   return (data ?? []) as Achievement[];
 }
 
+/**
+ * Achievements shown on the "My achievements" home screen: only files not
+ * filed into a folder (foldered ones already live under their folder, so
+ * repeating them here would just duplicate old content and slow the page
+ * down), server-paginated so opening the screen never fetches the whole
+ * history at once.
+ */
+export async function listRootAchievements(
+  ownerId: string,
+  options: { status?: 'approved' | 'pending'; limit: number; offset?: number }
+): Promise<{ items: Achievement[]; total: number }> {
+  const { status, limit, offset = 0 } = options;
+  let query = supabase
+    .from('achievements')
+    .select('*', { count: 'exact' })
+    .eq('owner_id', ownerId)
+    .is('folder_id', null)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (status === 'approved') query = query.eq('status', 'approved');
+  if (status === 'pending') query = query.neq('status', 'approved');
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+  return { items: (data ?? []) as Achievement[], total: count ?? 0 };
+}
+
 /** Achievements inside a specific folder (RLS controls visibility). */
 export async function listAchievementsByFolder(
   folderId: string

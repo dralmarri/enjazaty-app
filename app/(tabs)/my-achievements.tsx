@@ -1,12 +1,16 @@
 /**
  * My achievements tab — the home of the user's own content: the achievement
- * folders and the achievement files themselves, with status filtering and
- * incremental loading so a long history never floods the page.
+ * folders and the achievement files themselves, with status filtering.
+ *
+ * The file list only shows achievements not filed into a folder — foldered
+ * ones already live under their folder, so this screen fetches just a small
+ * page of the most recent root-level files at a time (see PAGE) instead of
+ * the whole history, keeping the home screen fast.
  *
  * Employee folders (where an admin places supervised employees) live in the
  * workspace tab instead — folders are separated by `kind` (migration_v20.sql).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
@@ -23,7 +27,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import {
   deleteFolder,
-  listAchievements,
+  listRootAchievements,
   listRootFolders,
   updateFolderKind,
   updateFolderName,
@@ -35,17 +39,18 @@ import { colors, radius, shadow, spacing } from '@/theme/colors';
 type Filter = 'all' | 'approved' | 'pending';
 
 /** How many achievement files are shown before "load more". */
-const PAGE = 15;
+const PAGE = 5;
 
 export default function MyAchievementsScreen() {
   const { profile } = useAuth();
   const { t, isRTL } = useLanguage();
 
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [total, setTotal] = useState(0);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
-  const [limit, setLimit] = useState(PAGE);
 
   // Add menus (folder / file source).
   const [addMenu, setAddMenu] = useState(false);
@@ -57,22 +62,25 @@ export default function MyAchievementsScreen() {
   const [renameFolder, setRenameFolder] = useState<Folder | null>(null);
   const [renameText, setRenameText] = useState('');
 
+  const statusParam = (f: Filter) => (f === 'all' ? undefined : f);
+
   const load = useCallback(async () => {
     if (!profile) return;
     try {
       setRefreshing(true);
-      const [achs, fdrs] = await Promise.all([
-        listAchievements(profile.id),
+      const [{ items, total: t }, fdrs] = await Promise.all([
+        listRootAchievements(profile.id, { status: statusParam(filter), limit: PAGE }),
         listRootFolders(profile.id, 'achievements'),
       ]);
-      setAchievements(achs);
+      setAchievements(items);
+      setTotal(t);
       setFolders(fdrs);
     } catch {
       // keep previous data on error
     } finally {
       setRefreshing(false);
     }
-  }, [profile]);
+  }, [profile, filter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -80,17 +88,26 @@ export default function MyAchievementsScreen() {
     }, [load])
   );
 
-  const visible = useMemo(() => {
-    if (filter === 'approved') return achievements.filter((a) => a.status === 'approved');
-    if (filter === 'pending') return achievements.filter((a) => a.status !== 'approved');
-    return achievements;
-  }, [achievements, filter]);
-
-  const displayed = visible.slice(0, limit);
+  const loadMore = async () => {
+    if (!profile || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const { items, total: t } = await listRootAchievements(profile.id, {
+        status: statusParam(filter),
+        limit: PAGE,
+        offset: achievements.length,
+      });
+      setAchievements((prev) => [...prev, ...items]);
+      setTotal(t);
+    } catch {
+      // keep previous data on error
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const onFilterChange = (key: Filter) => {
     setFilter(key);
-    setLimit(PAGE);
   };
 
   const onRenameFolder = async () => {
@@ -236,11 +253,11 @@ export default function MyAchievementsScreen() {
         })}
       </View>
 
-      {visible.length === 0 ? (
+      {achievements.length === 0 ? (
         <EmptyState message={t('noAchievements')} hint={t('addAchievementType')} />
       ) : (
         <>
-          {displayed.map((item) => (
+          {achievements.map((item) => (
             <AchievementRow
               key={item.id}
               achievement={item}
@@ -249,12 +266,13 @@ export default function MyAchievementsScreen() {
               onPress={() => router.push(`/achievement/${item.id}`)}
             />
           ))}
-          {visible.length > displayed.length ? (
+          {achievements.length < total ? (
             <Button
               title={t('loadMore')}
               variant="outline"
               icon="chevron-down"
-              onPress={() => setLimit((n) => n + PAGE)}
+              onPress={loadMore}
+              loading={loadingMore}
             />
           ) : null}
           <Text style={styles.hint}>{t('longPressHint')}</Text>
