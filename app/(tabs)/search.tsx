@@ -1,9 +1,11 @@
 /**
- * Search tab — search your achievements by title/description.
+ * Search tab — search your achievements by title/description, and the
+ * circulars & official letters addressed to you (or sent by you, for an
+ * admin) by title or body text.
  *
  * For an admin it also searches the employees he supervises (by name, User ID
  * or job title) and resolves any exact User ID. An employee supervises nobody,
- * so his search covers his own achievements only.
+ * so his search covers his own achievements and circulars only.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -20,8 +22,15 @@ import {
 } from '@/components';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { getProfileByCode, listAchievements, listSupervisedUsers } from '@/lib/api';
-import type { Achievement, UserProfile } from '@/types/database';
+import {
+  getProfileByCode,
+  listAchievements,
+  listReceivedCirculars,
+  listSentCirculars,
+  listSupervisedUsers,
+} from '@/lib/api';
+import { formatDate } from '@/lib/format';
+import type { Achievement, Circular, CircularKind, UserProfile } from '@/types/database';
 import { colors, radius, spacing } from '@/theme/colors';
 
 export default function SearchScreen() {
@@ -33,16 +42,24 @@ export default function SearchScreen() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [team, setTeam] = useState<UserProfile[]>([]);
   const [foundUser, setFoundUser] = useState<UserProfile | null>(null);
+  const [circulars, setCirculars] = useState<Circular[]>([]);
 
   const load = useCallback(async () => {
     if (!profile) return;
     try {
-      const [mine, supervised] = await Promise.all([
+      const [mine, supervised, received, sent] = await Promise.all([
         listAchievements(profile.id),
         isAdmin ? listSupervisedUsers(profile.id) : Promise.resolve([]),
+        listReceivedCirculars(profile.id),
+        isAdmin ? listSentCirculars(profile.id) : Promise.resolve([]),
       ]);
       setAchievements(mine);
       setTeam(supervised);
+      // Received + sent (admins), deduplicated by circular id.
+      const byId = new Map<string, Circular>();
+      received.forEach((r) => byId.set(r.circular.id, r.circular));
+      sent.forEach((c) => byId.set(c.id, c));
+      setCirculars(Array.from(byId.values()));
     } catch {
       // ignore
     }
@@ -77,6 +94,20 @@ export default function SearchScreen() {
         (u.job_title ?? '').toLowerCase().includes(q)
     );
   }, [query, team]);
+
+  // Circulars & official letters matched by title (also how attachments are
+  // labeled) or body text (the text an admin writes for a text circular).
+  const circularResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return circulars.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) || (c.body ?? '').toLowerCase().includes(q)
+    );
+  }, [query, circulars]);
+
+  const kindLabel = (k: CircularKind) =>
+    k === 'letter' ? t('kindLetter') : k === 'announcement' ? t('kindAnnouncement') : t('kindCircular');
 
   // If the query looks like a User ID, try to resolve it (admins only).
   const onLookupUser = useCallback(async () => {
@@ -156,10 +187,53 @@ export default function SearchScreen() {
         </Card>
       ) : null}
 
+      {/* Circulars & official letters matched by title or body text */}
+      {circularResults.length > 0 ? (
+        <>
+          <Text style={[styles.sectionTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('circulars')}
+          </Text>
+          {circularResults.map((c) => (
+            <Card
+              key={c.id}
+              style={styles.userCard}
+              onPress={() => router.push(`/circulars/${c.id}`)}
+            >
+              <View style={[styles.userRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <View style={styles.iconBox}>
+                  <Ionicons
+                    name={c.pinned ? 'pin' : 'megaphone-outline'}
+                    size={20}
+                    color={colors.primaryDark}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.userName} numberOfLines={2}>
+                    {c.title}
+                  </Text>
+                  <Text style={styles.userSub}>
+                    {kindLabel(c.kind)}
+                    {c.number ? ` · ${c.number}` : ''} · {formatDate(c.created_at, language)}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={isRTL ? 'chevron-back' : 'chevron-forward'}
+                  size={20}
+                  color={colors.mutedText}
+                />
+              </View>
+            </Card>
+          ))}
+        </>
+      ) : null}
+
       {/* Achievement results */}
       {query.trim().length === 0 ? (
         <EmptyState icon="search-outline" message={hint} />
-      ) : results.length === 0 && teamResults.length === 0 && !foundUser ? (
+      ) : results.length === 0 &&
+        teamResults.length === 0 &&
+        circularResults.length === 0 &&
+        !foundUser ? (
         <EmptyState icon="search-outline" message={t('noResults')} />
       ) : (
         results.map((item) => (

@@ -292,8 +292,8 @@ export const translations = {
     copy: 'نسخ',
 
     // Search
-    searchHint: 'ابحث في الإنجازات والموظفين',
-    searchHintOwn: 'ابحث في إنجازاتك',
+    searchHint: 'ابحث في الإنجازات والموظفين والتعاميم',
+    searchHintOwn: 'ابحث في إنجازاتك والتعاميم',
     noResults: 'لا توجد نتائج',
 
     // Folders
@@ -681,8 +681,8 @@ export const translations = {
     copied: 'Copied',
     copy: 'Copy',
 
-    searchHint: 'Search achievements and employees',
-    searchHintOwn: 'Search your achievements',
+    searchHint: 'Search achievements, employees and circulars',
+    searchHintOwn: 'Search your achievements and circulars',
     noResults: 'No results',
 
     folders: 'Folders',
