@@ -170,113 +170,112 @@ export default function WorkspaceScreen() {
         <Avatar name={profile?.full_name} uri={profile?.avatar_url} size={56} />
       </View>
 
-      {/* Two square actions side by side (team ones for an admin) */}
-      <View style={styles.actionsRow}>
+      {/* Quick actions — one compact icon grid instead of a mix of squares
+          and wide rows, so the whole workspace home fits in far less space. */}
+      <View style={styles.quickGrid}>
         {isAdmin ? (
           <>
-            <Pressable style={styles.actionCard} onPress={() => router.push('/employees')}>
-              <View style={styles.actionIcon}>
-                <Ionicons name="people-outline" size={26} color={colors.primaryDark} />
-              </View>
-              <Text style={styles.actionLabel}>{t('manageEmployees')}</Text>
-            </Pressable>
-
             <Pressable
-              style={styles.actionCard}
+              style={styles.quickCard}
               onPress={() => router.push('/folder/new?kind=employees')}
             >
               <View style={styles.actionIcon}>
-                <Ionicons name="folder-open-outline" size={26} color={colors.primaryDark} />
+                <Ionicons name="folder-open-outline" size={24} color={colors.primaryDark} />
               </View>
-              <Text style={styles.actionLabel}>{t('newFolder')}</Text>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('newFolder')}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/employees')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="people-outline" size={24} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('manageEmployees')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.quickCard}
+              onPress={() => router.push('/my-achievements')}
+            >
+              <View style={styles.actionIcon}>
+                <Ionicons name="documents-outline" size={24} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('myAchievements')}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/circulars')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="megaphone-outline" size={24} color={colors.primaryDark} />
+                {unreadCirculars > 0 ? (
+                  <View style={styles.quickBadge}>
+                    <Text style={styles.badgeText}>
+                      {unreadCirculars > 9 ? '9+' : unreadCirculars}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('circulars')}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/attendance')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="calendar-outline" size={24} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('attendance')}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/members')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="eye-outline" size={24} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('viewMembers')}
+              </Text>
             </Pressable>
           </>
         ) : (
           <>
-            <Pressable style={styles.actionCard} onPress={() => router.push('/members')}>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/members')}>
               <View style={styles.actionIcon}>
-                <Ionicons name="eye-outline" size={26} color={colors.primaryDark} />
+                <Ionicons name="eye-outline" size={24} color={colors.primaryDark} />
               </View>
-              <Text style={styles.actionLabel}>{t('viewMembers')}</Text>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('viewMembers')}
+              </Text>
             </Pressable>
-
             <Pressable
-              style={styles.actionCard}
+              style={styles.quickCard}
               onPress={() => router.push('/my-achievements')}
             >
               <View style={styles.actionIcon}>
-                <Ionicons name="documents-outline" size={26} color={colors.primaryDark} />
+                <Ionicons name="documents-outline" size={24} color={colors.primaryDark} />
               </View>
-              <Text style={styles.actionLabel}>{t('myAchievements')}</Text>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('myAchievements')}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/circulars')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="megaphone-outline" size={24} color={colors.primaryDark} />
+                {unreadCirculars > 0 ? (
+                  <View style={styles.quickBadge}>
+                    <Text style={styles.badgeText}>
+                      {unreadCirculars > 9 ? '9+' : unreadCirculars}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('circulars')}
+              </Text>
             </Pressable>
           </>
         )}
       </View>
-
-      {/* Admins keep the wide shortcut — the employee has it as a square above. */}
-      {isAdmin ? (
-        <Pressable style={styles.membersCard} onPress={() => router.push('/my-achievements')}>
-          <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="documents-outline" size={24} color={colors.primaryDark} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.membersTitle}>{t('myAchievements')}</Text>
-              <Text style={styles.membersHint}>{t('myAchievementsHint')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={colors.mutedText}
-            />
-          </View>
-        </Pressable>
-      ) : null}
-
-      {/* Circulars — an archive of what was sent to this user. Everyone has it;
-          only supervisors can write one (handled inside the screen). */}
-      <Pressable style={styles.membersCard} onPress={() => router.push('/circulars')}>
-        <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={styles.actionIcon}>
-            <Ionicons name="megaphone-outline" size={24} color={colors.primaryDark} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.membersTitle}>{t('circulars')}</Text>
-            <Text style={styles.membersHint}>{t('circularsHint')}</Text>
-          </View>
-          {unreadCirculars > 0 ? (
-            <View style={styles.countPill}>
-              <Text style={styles.countText}>{unreadCirculars}</Text>
-            </View>
-          ) : null}
-          <Ionicons
-            name={isRTL ? 'chevron-back' : 'chevron-forward'}
-            size={20}
-            color={colors.mutedText}
-          />
-        </View>
-      </Pressable>
-
-      {/* Attendance — supervising staff is an admin job, so employees don't
-          see this at all. */}
-      {isAdmin ? (
-        <Pressable style={styles.membersCard} onPress={() => router.push('/attendance')}>
-          <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="calendar-outline" size={24} color={colors.primaryDark} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.membersTitle}>{t('attendance')}</Text>
-              <Text style={styles.membersHint}>{t('attendanceHint')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={colors.mutedText}
-            />
-          </View>
-        </Pressable>
-      ) : null}
 
       {/* What an employee needs to see first: the achievements a supervisor
           asked to fix, then the newest evaluation received. */}
@@ -333,26 +332,6 @@ export default function WorkspaceScreen() {
             ) : null}
           </Card>
         </>
-      ) : null}
-
-      {/* View members (admins only — non-admins already have this in the action row above) */}
-      {isAdmin ? (
-        <Pressable style={styles.membersCard} onPress={() => router.push('/members')}>
-          <View style={[styles.membersRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="eye-outline" size={24} color={colors.primaryDark} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.membersTitle}>{t('viewMembers')}</Text>
-              <Text style={styles.membersHint}>{t('membersHint')}</Text>
-            </View>
-            <Ionicons
-              name={isRTL ? 'chevron-back' : 'chevron-forward'}
-              size={20}
-              color={colors.mutedText}
-            />
-          </View>
-        </Pressable>
       ) : null}
 
       {/* Employee folders (the team side of the workspace) */}
@@ -567,14 +546,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   idText: { fontSize: 12, fontWeight: '700', color: colors.primaryDark },
-  actionsRow: { flexDirection: 'row', gap: spacing.md },
-  actionCard: {
-    flex: 1,
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  quickCard: {
+    width: '30%',
+    flexGrow: 1,
     backgroundColor: colors.white,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.lg,
+    padding: spacing.md,
     alignItems: 'center',
     gap: spacing.sm,
     ...shadow,
@@ -587,34 +567,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionLabel: {
-    fontSize: 14,
+  quickLabel: {
+    fontSize: 13,
     fontWeight: '700',
     color: colors.textDark,
     textAlign: 'center',
   },
-  membersCard: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    marginTop: spacing.md,
-    ...shadow,
-  },
-  membersRow: { alignItems: 'center', gap: spacing.md },
-  countPill: {
-    minWidth: 24,
-    height: 24,
-    borderRadius: 12,
-    paddingHorizontal: 7,
-    backgroundColor: colors.primary,
+  quickBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 4,
   },
-  countText: { color: colors.onPrimary, fontSize: 12, fontWeight: '800' },
-  membersTitle: { fontSize: 15, fontWeight: '800', color: colors.textDark },
-  membersHint: { fontSize: 12, color: colors.mutedText, marginTop: 2 },
   evalCard: { marginBottom: spacing.md, gap: spacing.sm },
   evalTop: { alignItems: 'center', justifyContent: 'space-between' },
   starsRow: { flexDirection: 'row', gap: 2 },
