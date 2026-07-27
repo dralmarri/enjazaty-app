@@ -68,9 +68,32 @@ async function compressImage(uri: string): Promise<string> {
 }
 
 /**
+ * Re-saves a PDF's internal object table more compactly (pdf-lib's
+ * `useObjectStreams`) before upload — a lossless structural re-pack, not a
+ * re-render, so page content/quality never changes. Falls back to the
+ * original bytes if anything goes wrong or the result isn't actually smaller.
+ * pdf-lib is loaded dynamically so it never ships in the native bundle for
+ * users who don't upload PDFs.
+ */
+async function compressPdf(bytes: Uint8Array): Promise<Uint8Array> {
+  try {
+    const { PDFDocument } = await import('pdf-lib');
+    const pdfDoc = await PDFDocument.load(bytes, {
+      updateMetadata: false,
+      ignoreEncryption: true,
+    });
+    const saved = await pdfDoc.save({ useObjectStreams: true });
+    return saved.byteLength < bytes.byteLength ? saved : bytes;
+  } catch {
+    return bytes;
+  }
+}
+
+/**
  * Uploads a local file URI (from expo-image-picker / document-picker) to
- * Supabase Storage and returns the public URL. Photos are compressed
- * automatically first; other file types (video/documents) are untouched.
+ * Supabase Storage and returns the public URL. Photos and PDFs are both
+ * compressed automatically first; other file types (video/other documents)
+ * are untouched.
  */
 export async function uploadFile(params: {
   uri: string;
@@ -83,6 +106,7 @@ export async function uploadFile(params: {
   // GIFs are skipped so animation isn't destroyed by a JPEG conversion.
   const isCompressiblePhoto =
     !!contentType?.startsWith('image/') && contentType !== 'image/gif';
+  const isPdf = contentType === 'application/pdf';
 
   const sourceUri = isCompressiblePhoto ? await compressImage(uri) : uri;
   const finalContentType = isCompressiblePhoto ? 'image/jpeg' : contentType;
@@ -91,14 +115,23 @@ export async function uploadFile(params: {
       ? fileName.replace(/\.[^.]+$/, '') + '.jpg'
       : fileName;
 
-  // Read the file into a Blob (works on web + native via fetch).
+  // Read the file (works on web + native via fetch). PDFs are read as bytes
+  // so pdf-lib can re-pack them; everything else stays a Blob.
   const response = await fetch(sourceUri);
-  const blob = await response.blob();
+  let body: Blob | Uint8Array;
+  let size: number;
+  if (isPdf) {
+    body = await compressPdf(new Uint8Array(await response.arrayBuffer()));
+    size = body.byteLength;
+  } else {
+    body = await response.blob();
+    size = body.size;
+  }
 
-  if (isCompressiblePhoto && blob.size > MAX_IMAGE_BYTES) {
+  if (isCompressiblePhoto && size > MAX_IMAGE_BYTES) {
     throw new UploadSizeError('imageTooLarge');
   }
-  if (finalContentType === 'application/pdf' && blob.size > MAX_PDF_BYTES) {
+  if (isPdf && size > MAX_PDF_BYTES) {
     throw new UploadSizeError('pdfTooLarge');
   }
 
@@ -107,8 +140,8 @@ export async function uploadFile(params: {
 
   const { error } = await supabase.storage
     .from(ATTACHMENTS_BUCKET)
-    .upload(path, blob, {
-      contentType: finalContentType ?? blob.type ?? 'application/octet-stream',
+    .upload(path, body, {
+      contentType: finalContentType ?? (body instanceof Blob ? body.type : undefined) ?? 'application/octet-stream',
       upsert: false,
     });
   if (error) throw error;
