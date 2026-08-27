@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen, Button } from '@/components';
 import { useLanguage } from '@/context/LanguageContext';
@@ -11,6 +11,7 @@ export default function LanguageScreen() {
   return (
     <Screen scroll={false}>
       <View style={styles.center}>
+        <Image source={require('../assets/icon.png')} style={styles.logo} resizeMode="contain" />
         <Text style={styles.appName}>{t('appName')}</Text>
         <Text style={styles.tagline}>{t('appTagline')}</Text>
 
@@ -38,6 +39,7 @@ export default function LanguageScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  logo: { width: 88, height: 88, marginBottom: spacing.sm },
   appName: { fontSize: 32, fontWeight: '800', color: colors.primary },
   tagline: { fontSize: 14, color: colors.mutedText, marginBottom: spacing.xl, textAlign: 'center' },
   label: { fontSize: 15, fontWeight: '600', color: colors.textDark, marginBottom: spacing.sm },
