@@ -19,6 +19,8 @@ import type {
   Evaluation,
   Folder,
   FolderKind,
+  MaintenanceRequest,
+  MaintenanceRequestKind,
   Note,
   NoteType,
   Signature,
@@ -1045,4 +1047,106 @@ export async function clearAttendanceException(
 export async function deleteNotification(id: string): Promise<void> {
   const { error } = await supabase.from('notifications').delete().eq('id', id);
   if (error) throw error;
+}
+
+/* --------------------------- Maintenance requests ------------------------- */
+
+/** A requester's own maintenance/custody requests, newest first. */
+export async function listMyMaintenanceRequests(
+  requesterId: string
+): Promise<MaintenanceRequest[]> {
+  const { data, error } = await supabase
+    .from('maintenance_requests')
+    .select('*')
+    .eq('requester_id', requesterId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as MaintenanceRequest[];
+}
+
+/**
+ * Requests filed by people under this supervisor (any depth) awaiting his
+ * signature — RLS already scopes rows to the viewer's own chain, so this is
+ * everyone else's pending request the viewer can see.
+ */
+export async function listMaintenanceApprovals(
+  viewerId: string
+): Promise<MaintenanceRequest[]> {
+  const { data, error } = await supabase
+    .from('maintenance_requests')
+    .select('*')
+    .neq('requester_id', viewerId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as MaintenanceRequest[];
+}
+
+export async function getMaintenanceRequest(id: string): Promise<MaintenanceRequest | null> {
+  const { data, error } = await supabase
+    .from('maintenance_requests')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as MaintenanceRequest) ?? null;
+}
+
+export async function createMaintenanceRequest(input: {
+  requester_id: string;
+  kind: MaintenanceRequestKind;
+  request_type: string;
+  body: string;
+}): Promise<MaintenanceRequest> {
+  const { data, error } = await supabase
+    .from('maintenance_requests')
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as MaintenanceRequest;
+}
+
+/** Cancel a request the requester filed, only while it's still pending. */
+export async function deleteMaintenanceRequest(id: string): Promise<void> {
+  const { error } = await supabase.from('maintenance_requests').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/** Supervisor signs and approves the request — turns it into the official letter. */
+export async function approveMaintenanceRequest(
+  id: string,
+  input: { approver_id: string; signature: string }
+): Promise<MaintenanceRequest> {
+  const { data, error } = await supabase
+    .from('maintenance_requests')
+    .update({
+      status: 'approved',
+      approver_id: input.approver_id,
+      signature: input.signature,
+      approved_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as MaintenanceRequest;
+}
+
+export async function rejectMaintenanceRequest(
+  id: string,
+  input: { approver_id: string; note?: string | null }
+): Promise<MaintenanceRequest> {
+  const { data, error } = await supabase
+    .from('maintenance_requests')
+    .update({
+      status: 'rejected',
+      approver_id: input.approver_id,
+      approver_note: input.note ?? null,
+      approved_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as MaintenanceRequest;
 }

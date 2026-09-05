@@ -196,6 +196,30 @@ export interface CircularRecipient {
   created_at: string;
 }
 
+export type MaintenanceRequestKind = 'maintenance' | 'custody';
+export type MaintenanceRequestStatus = 'pending' | 'approved' | 'rejected';
+
+/**
+ * maintenance_requests — a "طلب صيانة" or "طلب استعارة عهدة" filed by an
+ * employee. Composed into an official letter to the technology department and
+ * signed off by the requester's supervisor (school principal / admin) to
+ * become an approved correspondence.
+ */
+export interface MaintenanceRequest {
+  id: string;
+  requester_id: string;
+  kind: MaintenanceRequestKind;
+  request_type: string;
+  body: string;
+  status: MaintenanceRequestStatus;
+  approver_id: string | null;
+  approver_note: string | null;
+  /** Electronic signature of the approving supervisor (SVG paths, JSON). */
+  signature: string | null;
+  created_at: string;
+  approved_at: string | null;
+}
+
 /** signatures — a user's reusable saved signatures (serialized SVG paths). */
 export interface Signature {
   id: string;
@@ -243,6 +267,7 @@ export interface Database {
       circulars: { Row: Circular };
       circular_recipients: { Row: CircularRecipient };
       attendance_exceptions: { Row: AttendanceException };
+      maintenance_requests: { Row: MaintenanceRequest };
     };
   };
 }

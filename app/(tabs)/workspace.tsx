@@ -236,6 +236,14 @@ export default function WorkspaceScreen() {
                 {t('viewMembers')}
               </Text>
             </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/maintenance')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="build-outline" size={24} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('maintenance')}
+              </Text>
+            </Pressable>
           </>
         ) : (
           <>
@@ -271,6 +279,14 @@ export default function WorkspaceScreen() {
               </View>
               <Text style={styles.quickLabel} numberOfLines={2}>
                 {t('circulars')}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.quickCard} onPress={() => router.push('/maintenance')}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="build-outline" size={24} color={colors.primaryDark} />
+              </View>
+              <Text style={styles.quickLabel} numberOfLines={2}>
+                {t('maintenance')}
               </Text>
             </Pressable>
           </>
